@@ -1,0 +1,12 @@
+This contract is ported from:
+
+  stellar/soroban-examples
+  groth16_verifier
+  https://github.com/stellar/soroban-examples/tree/main/groth16_verifier
+  Licensed under the Apache License, Version 2.0 (see LICENSE in this
+  directory).
+
+Changes made: none to the verification algorithm itself (vk_x accumulation
++ e(-A,B)*e(alpha,beta)*e(vk_x,gamma)*e(C,delta)==1 pairing check is
+identical). Renamed the contract/types to match this repo's naming and
+added a few additional doc comments.

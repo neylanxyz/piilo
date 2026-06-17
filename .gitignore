@@ -1,0 +1,35 @@
+# Rust build output
+target/
+
+# Cargo lock is intentionally committed for reproducible builds
+
+# Circom / snarkjs
+circuits/node_modules/
+circuits/build/pot14_0.ptau
+circuits/build/pot14_1.ptau
+circuits/build/pot14_final.ptau
+circuits/build/transfer_0.zkey
+circuits/build/withdraw_0.zkey
+
+# circomlib is tracked as a git submodule
+# (do not commit its .git directory or files directly)
+
+# SDK / Frontend
+packages/*/node_modules/
+packages/*/dist/
+packages/*/.next/
+
+# Environment / secrets
+.env
+.env.local
+*.env
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

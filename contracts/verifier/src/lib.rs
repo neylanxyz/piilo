@@ -1,0 +1,81 @@
+#![no_std]
+
+//! Groth16 verifier contract for Circom-style proofs on Soroban's native
+//! BLS12-381 precompile (CAP-0059).
+//!
+//! Ported from stellar/soroban-examples (groth16_verifier, Apache-2.0 —
+//! see LICENSE/NOTICE in this directory). The verification algorithm is
+//! unchanged from the original:
+//!   vk_x = ic[0] + sum_i(pub_signals[i] * ic[i+1])
+//!   e(-A, B) * e(alpha, beta) * e(vk_x, gamma) * e(C, delta) == 1
+//!
+//! Stateless by design (matching upstream): the verification key is a
+//! plain call argument, not constructor/storage state. Piilo holds two
+//! VKs (one per circuit) and passes the right one on each call — a single
+//! generic verifier instance serves both, since the contract itself
+//! doesn't care which circuit a VK belongs to.
+
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype,
+    crypto::bls12_381::{Fr, G1Affine, G2Affine},
+    vec, Env, Vec,
+};
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum Groth16Error {
+    MalformedVerifyingKey = 0,
+}
+
+#[contracttype]
+#[derive(Clone)]
+pub struct VerificationKey {
+    pub alpha: G1Affine,
+    pub beta: G2Affine,
+    pub gamma: G2Affine,
+    pub delta: G2Affine,
+    pub ic: Vec<G1Affine>,
+}
+
+#[contracttype]
+#[derive(Clone)]
+pub struct Proof {
+    pub a: G1Affine,
+    pub b: G2Affine,
+    pub c: G1Affine,
+}
+
+#[contract]
+pub struct Groth16Verifier;
+
+#[contractimpl]
+impl Groth16Verifier {
+    pub fn verify_proof(
+        env: Env,
+        vk: VerificationKey,
+        proof: Proof,
+        pub_signals: Vec<Fr>,
+    ) -> Result<bool, Groth16Error> {
+        let bls = env.crypto().bls12_381();
+
+        // vk_x = ic[0] + sum(pub_signals[i] * ic[i+1])
+        if pub_signals.len() + 1 != vk.ic.len() {
+            return Err(Groth16Error::MalformedVerifyingKey);
+        }
+        let mut vk_x = vk.ic.get(0).unwrap();
+        for (s, v) in pub_signals.iter().zip(vk.ic.iter().skip(1)) {
+            let prod = bls.g1_mul(&v, &s);
+            vk_x = bls.g1_add(&vk_x, &prod);
+        }
+
+        // e(-A, B) * e(alpha, beta) * e(vk_x, gamma) * e(C, delta) == 1
+        let neg_a = -proof.a;
+        let vp1 = vec![&env, neg_a, vk.alpha, vk_x, proof.c];
+        let vp2 = vec![&env, proof.b, vk.beta, vk.gamma, vk.delta];
+
+        Ok(bls.pairing_check(vp1, vp2))
+    }
+}
+
+mod test;
