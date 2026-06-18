@@ -249,7 +249,7 @@ fn deposit_creates_account_and_funds_vault() {
     let user = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &user, 1_000);
 
-    client.deposit(&user, &500, &blinding(&s.env, 7));
+    client.deposit(&user, &500, &blinding(&s.env, 7), &blinding(&s.env, 0));
 
     assert_eq!(token_client.balance(&user), 500);
     assert_eq!(token_client.balance(&s.piilo_id), 500);
@@ -269,8 +269,8 @@ fn second_deposit_merges_homomorphically() {
     let user = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &user, 1_000);
 
-    client.deposit(&user, &300, &blinding(&s.env, 1));
-    client.deposit(&user, &200, &blinding(&s.env, 2));
+    client.deposit(&user, &300, &blinding(&s.env, 1), &blinding(&s.env, 0));
+    client.deposit(&user, &200, &blinding(&s.env, 2), &blinding(&s.env, 0));
 
     let account = client.get_account(&user).unwrap();
 
@@ -289,7 +289,7 @@ fn deposit_rejects_non_positive_amount() {
     let user = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &user, 1_000);
 
-    let result = client.try_deposit(&user, &0, &blinding(&s.env, 1));
+    let result = client.try_deposit(&user, &0, &blinding(&s.env, 1), &blinding(&s.env, 0));
     assert_eq!(result, Err(Ok(PiiloError::InvalidAmount)));
 }
 
@@ -300,7 +300,7 @@ fn transfer_with_valid_proof_updates_sender_and_recipient() {
     let alice = Address::generate(&s.env);
     let bob = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &alice, 1_000);
-    client.deposit(&alice, &100, &blinding(&s.env, 1));
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
 
     let balance = client.get_account(&alice).unwrap().balance_commitment;
     let c_a = test_point(&s.env, 300);
@@ -329,8 +329,8 @@ fn transfer_accumulates_pending_from_multiple_senders() {
     fund(&s.env, &s.token_id, &alice, 1_000);
     fund(&s.env, &s.token_id, &carol, 1_000);
 
-    client.deposit(&alice, &100, &blinding(&s.env, 1));
-    client.deposit(&carol, &100, &blinding(&s.env, 2));
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
+    client.deposit(&carol, &100, &blinding(&s.env, 2), &blinding(&s.env, 0));
 
     let alice_balance = client.get_account(&alice).unwrap().balance_commitment;
     let carol_balance = client.get_account(&carol).unwrap().balance_commitment;
@@ -358,7 +358,7 @@ fn transfer_with_proof_for_wrong_statement_is_rejected() {
     let alice = Address::generate(&s.env);
     let bob = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &alice, 1_000);
-    client.deposit(&alice, &100, &blinding(&s.env, 1));
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
 
     let balance = client.get_account(&alice).unwrap().balance_commitment;
     let c_a = test_point(&s.env, 1);
@@ -401,7 +401,7 @@ fn settle_pending_merges_and_clears() {
     let alice = Address::generate(&s.env);
     let bob = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &alice, 1_000);
-    client.deposit(&alice, &100, &blinding(&s.env, 1));
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
 
     let balance = client.get_account(&alice).unwrap().balance_commitment;
     let c_a = test_point(&s.env, 300);
@@ -424,7 +424,7 @@ fn settle_pending_without_pending_fails() {
     let client = PiiloClient::new(&s.env, &s.piilo_id);
     let alice = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &alice, 1_000);
-    client.deposit(&alice, &100, &blinding(&s.env, 1));
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
 
     let result = client.try_settle_pending(&alice);
     assert_eq!(result, Err(Ok(PiiloError::NoPendingBalance)));
@@ -437,7 +437,7 @@ fn withdraw_pays_out_and_resets_balance() {
     let token_client = token::Client::new(&s.env, &s.token_id);
     let alice = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &alice, 1_000);
-    client.deposit(&alice, &400, &blinding(&s.env, 1));
+    client.deposit(&alice, &400, &blinding(&s.env, 1), &blinding(&s.env, 0));
 
     let balance = client.get_account(&alice).unwrap().balance_commitment;
     let proof = withdraw_proof(&s, &balance, 400);
@@ -456,7 +456,7 @@ fn withdraw_more_than_vault_fails() {
     let client = PiiloClient::new(&s.env, &s.piilo_id);
     let alice = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &alice, 1_000);
-    client.deposit(&alice, &100, &blinding(&s.env, 1));
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
 
     // Fails the vault check before verification, so any proof does.
     let result = client.try_withdraw(&alice, &200, &dummy_proof(&s.env));
@@ -469,7 +469,7 @@ fn withdraw_with_proof_for_wrong_amount_is_rejected() {
     let client = PiiloClient::new(&s.env, &s.piilo_id);
     let alice = Address::generate(&s.env);
     fund(&s.env, &s.token_id, &alice, 1_000);
-    client.deposit(&alice, &100, &blinding(&s.env, 1));
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
 
     let balance = client.get_account(&alice).unwrap().balance_commitment;
     // Genuinely valid proof, but for withdrawing 50 — submitted against a
@@ -509,7 +509,7 @@ fn single_deposit_fits_real_mainnet_resource_limits() {
     let user = Address::generate(&env);
     fund(&env, &token_id, &user, 1_000);
 
-    client.deposit(&user, &500, &blinding(&env, 7));
+    client.deposit(&user, &500, &blinding(&env, 7), &blinding(&env, 0));
 
     std::println!("{}", env.cost_estimate().budget());
 }
@@ -551,7 +551,7 @@ fn transfer_real_cost_measurement() {
     // deposit needs its own budget check (done separately); reset before
     // timing transfer specifically, matching how each would be a separate
     // transaction on a real network.
-    client.deposit(&alice, &100, &blinding(&env, 1));
+    client.deposit(&alice, &100, &blinding(&env, 1), &blinding(&env, 0));
     // deposit() alone uses ~75% of the budget (measured separately); reset
     // to unlimited so transfer()'s own cost can be measured without
     // panicking on the ceiling deposit already ate into.
@@ -587,7 +587,7 @@ fn deposit_requires_user_auth() {
     // setup() called mock_all_auths(); clear it to actually exercise
     // require_auth() enforcement instead of bypassing it.
     s.env.set_auths(&[]);
-    let result = client.try_deposit(&alice, &100, &blinding(&s.env, 1));
+    let result = client.try_deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
     assert!(result.is_err());
 }
 
@@ -863,7 +863,7 @@ fn real_circom_transfer_proof_is_accepted() {
 
     // deposit(500, r_B=111): contract computes C_B = commit(500, 111, G, H).
     // If this matches c_b_point() from the circuit, the proof below passes.
-    client.deposit(&alice, &500, &blinding(&env, 111));
+    client.deposit(&alice, &500, &blinding(&env, 111), &blinding(&env, 0));
 
     let deposited_c_b = client.get_account(&alice).unwrap().balance_commitment;
     assert_eq!(deposited_c_b, c_b_point(&env), "contract commit() disagrees with circuit on C_B");
@@ -913,7 +913,7 @@ fn real_circom_withdraw_proof_is_accepted() {
     let alice = Address::generate(&env);
     fund(&env, &token_id, &alice, 1_000);
 
-    client.deposit(&alice, &500, &blinding(&env, 111));
+    client.deposit(&alice, &500, &blinding(&env, 111), &blinding(&env, 0));
 
     let deposited_c_b = client.get_account(&alice).unwrap().balance_commitment;
     assert_eq!(deposited_c_b, c_b_point(&env), "contract commit() disagrees with circuit on C_B");

@@ -91,9 +91,10 @@ export class Piilo {
   async deposit(amount: bigint): Promise<void> {
     if (amount <= 0n) throw new Error("amount must be positive");
     const address = await this.myAddress();
+    const noteKeypair = await this.getNoteKeypair();
     const r = randomFr();
 
-    await this.stellar.deposit(this.cfg.wallet, amount, r);
+    await this.stellar.deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
 
     const state = loadState(address);
     saveState(address, applyDeposit(state, amount, r));
@@ -211,6 +212,45 @@ export class Piilo {
     saveState(address, { balance: 0n, r: 0n, pendingNotes: [] });
   }
 
+  /** Export local state (balance + blinding factor) as a JSON string. */
+  async exportBackup(): Promise<string> {
+    const address = await this.myAddress();
+    const state = loadState(address);
+    return JSON.stringify({
+      version: 1,
+      address,
+      balance: state.balance.toString(),
+      r: state.r.toString(),
+    });
+  }
+
+  /**
+   * Restore local state from a backup JSON string.
+   * Verifies the restored (balance, r) opens to the on-chain commitment
+   * before writing — rejects corrupted or mismatched backups.
+   */
+  async importBackup(json: string): Promise<{ balance: bigint }> {
+    const address = await this.myAddress();
+    const data = JSON.parse(json) as { version: number; address: string; balance: string; r: string };
+    if (data.version !== 1) throw new Error(`Unknown backup version ${data.version}`);
+    if (data.address !== address)
+      throw new Error(`Backup belongs to ${data.address}, connected wallet is ${address}`);
+
+    const balance = BigInt(data.balance);
+    const r = BigInt(data.r);
+
+    const onChain = await this.stellar.getAccount(address);
+    if (!onChain) throw new Error("No on-chain account — deposit first, then restore");
+
+    const [cx, cy] = await localCommit(balance, r);
+    const [onX, onY] = onChain.balance_commitment;
+    if (cx !== onX || cy !== onY)
+      throw new Error("Backup does not match on-chain commitment — wrong balance or blinding factor");
+
+    saveState(address, { balance, r, pendingNotes: [] });
+    return { balance };
+  }
+
   // ── Private helpers ────────────────────────────────────────────────────────
 
   private async proveTransferAndExtractCommitments(
@@ -272,40 +312,48 @@ export class Piilo {
     return { proof, C_A, C_new };
   }
 
-  // Fetch the note pubkey for a recipient. Currently reads it from on-chain
-  // events emitted during their own deposit/transfer calls. In the MVP this
-  // is a direct RPC query; a relay or indexer could cache it.
+  // Fetch the note pubkey for a recipient from the contract.
+  // The pubkey is stored on-chain when the recipient calls deposit().
   private async fetchRecipientNotePubkey(address: string): Promise<Uint8Array> {
-    // For the MVP: recipient note pubkey is stored in a well-known format in
-    // the first `deposit` event for their account, or communicated out-of-band.
-    // Placeholder: throw if not found; real implementation queries RPC events.
+    const myAddr = await this.myAddress();
+    if (address === myAddr) {
+      return (await this.getNoteKeypair()).publicKey;
+    }
+    const pubkey = await this.stellar.getNotePubkey(address);
+    if (pubkey) return pubkey;
     throw new Error(
-      `fetchRecipientNotePubkey not yet implemented for ${address} — ` +
-        "recipients must share their note pubkey out-of-band in this MVP."
+      `Recipient ${address} has not deposited yet — their note pubkey is not on-chain.`
     );
   }
 
-  // Fetch and decrypt all incoming transfer notes for this address from
-  // on-chain events within the 7-day RPC retention window.
+  // Fetch and decrypt pending transfer notes from contract persistent storage.
+  // Notes are written on transfer and cleared on settle — no event queries needed.
   private async fetchPendingNotes(address: string): Promise<Note[]> {
     const noteKeypair = await this.getNoteKeypair();
-    // Query `transfer` events where recipient == address.
-    // Each event carries an encrypted_note bytes field.
-    // For MVP: return notes already cached in local state + any newly found.
-    const state = loadState(address);
-    // TODO: query RPC for TransferEvent where to == address, decrypt each note.
-    return state.pendingNotes;
+    const rawNotes = await this.stellar.getPendingNotes(address);
+    const notes: Note[] = [];
+    for (const { from, encryptedNote } of rawNotes) {
+      try {
+        const decrypted = decryptNote(decodeNote(encryptedNote), noteKeypair);
+        if (!decrypted) {
+          console.error("[piilo] decryptNote returned null for note from", from);
+          continue;
+        }
+        notes.push({ from, amount: decrypted.amount, r_A: decrypted.r_A });
+      } catch (e) {
+        console.error("[piilo] failed to decode/decrypt note from", from, e);
+      }
+    }
+    return notes;
   }
 }
 
 // ── Local JubJub commitment (mirrors commitment.rs, for pre-computing C_A/C_new) ──
 
 function assetPath(rel: string): string {
-  const base =
-    typeof process !== "undefined"
-      ? new URL("../../../circuits/build/", import.meta.url).pathname
-      : "/circuits/build/";
-  return `${base}${rel}`;
+  if (typeof window !== "undefined") return `/circuits/${rel}`;
+  const repoRoot = new URL("../../../", import.meta.url);
+  return new URL(`circuits/build/${rel}`, repoRoot).pathname;
 }
 
 // JubJub curve parameters (same as jubjub.circom and commitment.rs).
@@ -334,12 +382,14 @@ function edwardsAdd(
   [x2, y2]: [bigint, bigint]
 ): [bigint, bigint] {
   // Complete twisted Edwards addition: -x^2 + y^2 = 1 + d*x^2*y^2, a = -1
-  const x1y2 = modFr(x1 * y2);
-  const y1x2 = modFr(y1 * x2);
-  const dTau = modFr(D * modFr(x1y2 * y1x2));
-  const xNum = modFr(x1y2 + y1x2);
+  // x3 = (x1*y2 + y1*x2) / (1 + d*x1*x2*y1*y2)
+  // y3 = (y1*y2 + x1*x2) / (1 - d*x1*x2*y1*y2)
+  const b = modFr(x1 * y2);
+  const c = modFr(y1 * x2);
+  const dTau = modFr(D * modFr(b * c));
+  const xNum = modFr(b + c);
   const xDen = modFr(1n + dTau);
-  const yNum = modFr(modFr(modFr(modFr(-x1) * y2) + modFr(y1 * y2)) + modFr(x1 * x2));
+  const yNum = modFr(modFr(y1 * y2) + modFr(x1 * x2));
   const yDen = modFr(1n - dTau);
 
   const xOut = modFr(xNum * modInv(xDen, FR_Q));

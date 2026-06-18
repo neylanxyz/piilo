@@ -1,0 +1,8 @@
+{
+  "name": "piilo",
+  "private": true,
+  "workspaces": [
+    "packages/sdk",
+    "examples/confidential-wallet"
+  ]
+}

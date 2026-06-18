@@ -24,6 +24,15 @@ pub enum DataKey {
     NativeToken,
     VaultBalance,
     Account(Address),
+    NotePubkey(Address),
+    PendingNotes(Address),
+}
+
+#[contracttype]
+#[derive(Clone)]
+pub struct PendingNote {
+    pub encrypted_note: Bytes,
+    pub from: Address,
 }
 
 #[contracttype]
@@ -167,7 +176,7 @@ impl Piilo {
     /// the contract computes C = amount*G + r*H itself, so there's nothing
     /// to verify it against (a redundant "verify the user's own commitment"
     /// step would just be extra surface for a bad replicated computation).
-    pub fn deposit(env: Env, user: Address, amount: i128, blinding: soroban_sdk::BytesN<32>) -> Result<(), PiiloError> {
+    pub fn deposit(env: Env, user: Address, amount: i128, blinding: soroban_sdk::BytesN<32>, note_pubkey: soroban_sdk::BytesN<32>) -> Result<(), PiiloError> {
         user.require_auth();
         if amount <= 0 {
             return Err(PiiloError::InvalidAmount);
@@ -189,6 +198,10 @@ impl Piilo {
             .unwrap_or_else(|| empty_account(&env));
         account.balance_commitment = commitment::add(&env, &account.balance_commitment, &c);
         save_account(&env, &user, &account);
+
+        let note_key = DataKey::NotePubkey(user.clone());
+        env.storage().persistent().set(&note_key, &note_pubkey);
+        env.storage().persistent().extend_ttl(&note_key, TTL_THRESHOLD, TTL_EXTEND_TO);
 
         let vault: i128 = env.storage().instance().get(&DataKey::VaultBalance).unwrap();
         env.storage()
@@ -237,6 +250,16 @@ impl Piilo {
         recipient_account.has_pending = true;
         save_account(&env, &recipient, &recipient_account);
 
+        let notes_key = DataKey::PendingNotes(recipient.clone());
+        let mut notes: soroban_sdk::Vec<PendingNote> = env
+            .storage()
+            .persistent()
+            .get(&notes_key)
+            .unwrap_or_else(|| soroban_sdk::Vec::new(&env));
+        notes.push_back(PendingNote { from: sender.clone(), encrypted_note: encrypted_note.clone() });
+        env.storage().persistent().set(&notes_key, &notes);
+        env.storage().persistent().extend_ttl(&notes_key, TTL_THRESHOLD, TTL_EXTEND_TO);
+
         TransferEvent {
             from: sender,
             to: recipient,
@@ -263,6 +286,8 @@ impl Piilo {
         account.has_pending = false;
         account.nonce += 1;
         save_account(&env, &user, &account);
+
+        env.storage().persistent().remove(&DataKey::PendingNotes(user.clone()));
 
         SettleEvent { user }.publish(&env);
         Ok(())
@@ -306,6 +331,17 @@ impl Piilo {
 
     pub fn get_account(env: Env, user: Address) -> Option<ConfidentialAccount> {
         env.storage().persistent().get(&DataKey::Account(user))
+    }
+
+    pub fn get_note_pubkey(env: Env, user: Address) -> Option<soroban_sdk::BytesN<32>> {
+        env.storage().persistent().get(&DataKey::NotePubkey(user))
+    }
+
+    pub fn get_pending_notes(env: Env, user: Address) -> soroban_sdk::Vec<PendingNote> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::PendingNotes(user))
+            .unwrap_or_else(|| soroban_sdk::Vec::new(&env))
     }
 
     pub fn get_vault_balance(env: Env) -> i128 {

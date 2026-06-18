@@ -30,62 +30,62 @@ export interface WalletAdapter {
 
 // ── XDR encoding helpers ─────────────────────────────────────────────────────
 
+function hexToBytes(hex: string): Uint8Array {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2)
+    out[i >> 1] = parseInt(hex.slice(i, i + 2), 16);
+  return out;
+}
+
+function concatBytes(...arrays: Uint8Array[]): Uint8Array {
+  const total = arrays.reduce((n, a) => n + a.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const a of arrays) { out.set(a, offset); offset += a.length; }
+  return out;
+}
+
+// stellar-sdk types declare scvBytes as taking Buffer; Uint8Array is safe at
+// runtime because Buffer extends Uint8Array.
+const toScvBytes = (u8: Uint8Array): xdr.ScVal =>
+  xdr.ScVal.scvBytes(u8 as unknown as Buffer);
+
 function encodePoint(p: JubJubPoint): xdr.ScVal {
   // Point { x: BytesN<32>, y: BytesN<32> } stored as a Soroban struct (map).
-  const xBytes = Buffer.from(BigInt(p[0]).toString(16).padStart(64, "0"), "hex");
-  const yBytes = Buffer.from(BigInt(p[1]).toString(16).padStart(64, "0"), "hex");
+  const xBytes = hexToBytes(BigInt(p[0]).toString(16).padStart(64, "0"));
+  const yBytes = hexToBytes(BigInt(p[1]).toString(16).padStart(64, "0"));
   return xdr.ScVal.scvMap([
-    new xdr.ScMapEntry({
-      key: xdr.ScVal.scvSymbol("x"),
-      val: xdr.ScVal.scvBytes(xBytes),
-    }),
-    new xdr.ScMapEntry({
-      key: xdr.ScVal.scvSymbol("y"),
-      val: xdr.ScVal.scvBytes(yBytes),
-    }),
+    new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("x"), val: toScvBytes(xBytes) }),
+    new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("y"), val: toScvBytes(yBytes) }),
   ]);
 }
 
 function encodeG1(coords: [string, string]): xdr.ScVal {
   // G1Affine (uncompressed, 96 bytes): x || y, each 48 bytes big-endian Fq.
-  const x = Buffer.from(BigInt(coords[0]).toString(16).padStart(96, "0"), "hex");
-  const y = Buffer.from(BigInt(coords[1]).toString(16).padStart(96, "0"), "hex");
-  return xdr.ScVal.scvBytes(Buffer.concat([x, y]));
+  const x = hexToBytes(BigInt(coords[0]).toString(16).padStart(96, "0"));
+  const y = hexToBytes(BigInt(coords[1]).toString(16).padStart(96, "0"));
+  return toScvBytes(concatBytes(x, y));
 }
 
-function encodeG2(
-  coords: [[string, string], [string, string]]
-): xdr.ScVal {
-  // G2Affine (uncompressed, 192 bytes): x_c0 || x_c1 || y_c0 || y_c1, each 48 bytes.
-  const parts = [coords[0][0], coords[0][1], coords[1][0], coords[1][1]];
-  const buf = Buffer.concat(
-    parts.map((c) => Buffer.from(BigInt(c).toString(16).padStart(96, "0"), "hex"))
+function encodeG2(coords: [[string, string], [string, string]]): xdr.ScVal {
+  // BLS12-381 G2 uncompressed (192 bytes): x_c1 || x_c0 || y_c1 || y_c0 (Zcash: imaginary first).
+  // snarkjs outputs [[x_c0, x_c1], [y_c0, y_c1]] — swap within each pair.
+  const parts = [coords[0][1], coords[0][0], coords[1][1], coords[1][0]];
+  return toScvBytes(
+    concatBytes(...parts.map((c) => hexToBytes(BigInt(c).toString(16).padStart(96, "0"))))
   );
-  return xdr.ScVal.scvBytes(buf);
 }
 
 function encodeProof(proof: GrothProof): xdr.ScVal {
   return xdr.ScVal.scvMap([
-    new xdr.ScMapEntry({
-      key: xdr.ScVal.scvSymbol("a"),
-      val: encodeG1(proof.pi_a),
-    }),
-    new xdr.ScMapEntry({
-      key: xdr.ScVal.scvSymbol("b"),
-      val: encodeG2(proof.pi_b),
-    }),
-    new xdr.ScMapEntry({
-      key: xdr.ScVal.scvSymbol("c"),
-      val: encodeG1(proof.pi_c),
-    }),
+    new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("a"), val: encodeG1(proof.pi_a) }),
+    new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("b"), val: encodeG2(proof.pi_b) }),
+    new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("c"), val: encodeG1(proof.pi_c) }),
   ]);
 }
 
 function encodeBlinding(r: bigint): xdr.ScVal {
-  const buf = Buffer.alloc(32);
-  const hex = r.toString(16).padStart(64, "0");
-  Buffer.from(hex, "hex").copy(buf);
-  return xdr.ScVal.scvBytes(buf);
+  return toScvBytes(hexToBytes(r.toString(16).padStart(64, "0")));
 }
 
 // ── Transaction lifecycle ────────────────────────────────────────────────────
@@ -151,13 +151,15 @@ export class PiiloStellar {
   async deposit(
     wallet: WalletAdapter,
     amount: bigint,
-    r: bigint
+    r: bigint,
+    notePubkey: Uint8Array
   ): Promise<void> {
     const user = await wallet.publicKey();
     await this.buildAndSend(wallet, "deposit", [
       nativeToScVal(user, { type: "address" }),
       nativeToScVal(amount, { type: "i128" }),
       encodeBlinding(r),
+      toScvBytes(notePubkey),
     ]);
   }
 
@@ -176,7 +178,7 @@ export class PiiloStellar {
       encodePoint(c_a),
       encodePoint(c_new),
       encodeProof(proof),
-      xdr.ScVal.scvBytes(Buffer.from(encryptedNote)),
+      toScvBytes(encryptedNote),
     ]);
   }
 
@@ -254,11 +256,163 @@ export class PiiloStellar {
     const val = scValToNative(sim.result.retval);
     if (!val) return null;
 
+    // BytesN<32> → bigint decimal string.  String(Uint8Array) gives CSV bytes;
+    // we need the bytes as a big-endian 256-bit integer.
+    const bytesToDec = (b: Uint8Array): string => {
+      let hex = "";
+      for (const byte of b) hex += byte.toString(16).padStart(2, "0");
+      return BigInt("0x" + hex).toString();
+    };
+    const pt = (raw: { x: Uint8Array; y: Uint8Array }): JubJubPoint =>
+      [bytesToDec(raw.x), bytesToDec(raw.y)];
+
     return {
-      balance_commitment: [String(val.balance_commitment.x), String(val.balance_commitment.y)],
-      pending_commitment: [String(val.pending_commitment.x), String(val.pending_commitment.y)],
+      balance_commitment: pt(val.balance_commitment),
+      pending_commitment: pt(val.pending_commitment),
       has_pending: Boolean(val.has_pending),
       nonce: BigInt(val.nonce ?? 0),
     };
+  }
+
+  // Returns all transfer events directed to recipientAddress that occurred
+  // after the most recent settle event for that address (so already-counted
+  // notes are excluded). Covers the 7-day RPC retention window.
+  async getTransferNotes(
+    recipientAddress: string
+  ): Promise<Array<{ from: string; encryptedNote: Uint8Array }>> {
+    const latest = await this.rpc.getLatestLedger();
+    // Use 100_000 ledgers (~5.8 days) instead of 120_960 to stay safely inside
+    // the RPC's actual retention window (exact boundary varies; 120_960 causes
+    // off-by-one failures when latest.sequence - 120_960 < minRetained).
+    const windowStart = Math.max(1, latest.sequence - 100_000);
+
+    const transferSym = xdr.ScVal.scvSymbol("transfer").toXDR("base64");
+    const settleSym   = xdr.ScVal.scvSymbol("settle").toXDR("base64");
+    const contractIds = [this.contract.contractId()];
+
+    // Normalise scValToNative address fields: they may be Address objects (with
+    // .toString()) or plain strings depending on sdk version. Always compare as
+    // strings to avoid silent identity-comparison failures.
+    const addrStr = (v: unknown): string => String(v);
+
+    // Find the latest ledger at which this address settled, to avoid
+    // re-counting notes that are already in local balance.
+    let fromLedger = windowStart;
+    try {
+      const settleResp = await this.rpc.getEvents({
+        startLedger: windowStart,
+        filters: [{ type: "contract", contractIds, topics: [[settleSym]] }],
+        limit: 200,
+      });
+      for (const ev of settleResp.events) {
+        const data = scValToNative(ev.value) as { user: unknown };
+        if (addrStr(data.user) === recipientAddress) {
+          fromLedger = Math.max(fromLedger, Number(ev.ledger));
+        }
+      }
+    } catch (e) {
+      console.error("[piilo] settle events query failed:", e);
+    }
+
+    try {
+      const resp = await this.rpc.getEvents({
+        startLedger: Math.max(windowStart, fromLedger),
+        filters: [{ type: "contract", contractIds, topics: [[transferSym]] }],
+        limit: 200,
+      });
+      const results: Array<{ from: string; encryptedNote: Uint8Array }> = [];
+      for (const ev of resp.events) {
+        try {
+          const data = scValToNative(ev.value) as {
+            from: unknown; to: unknown; encrypted_note: Uint8Array | Buffer;
+          };
+          if (addrStr(data.to) !== recipientAddress) continue;
+          results.push({
+            from: addrStr(data.from),
+            encryptedNote: new Uint8Array(data.encrypted_note),
+          });
+        } catch (e) {
+          console.error("[piilo] malformed transfer event:", e);
+        }
+      }
+      return results;
+    } catch (e) {
+      console.error("[piilo] transfer events query failed:", e);
+      return [];
+    }
+  }
+
+  async getPendingNotes(
+    address: string
+  ): Promise<Array<{ from: string; encryptedNote: Uint8Array }>> {
+    const dummyKeypair = Keypair.random();
+    const dummyAccount = await this.rpc.getAccount(dummyKeypair.publicKey()).catch(() => ({
+      id: dummyKeypair.publicKey(), sequenceNumber: () => "0",
+      incrementSequenceNumber: () => {}, accountId: () => dummyKeypair.publicKey(),
+      sequence: "0", subentryCount: 0, inflationDest: null, homeDomain: "",
+      thresholds: { lowThreshold: 0, medThreshold: 0, highThreshold: 0 },
+      flags: { authRequired: false, authRevocable: false, authImmutable: false },
+      balances: [], signers: [], data: {},
+    } as never));
+
+    const tx = new TransactionBuilder(dummyAccount as never, {
+      fee: "100", networkPassphrase: this.networkPassphrase(),
+    })
+      .addOperation(this.contract.call("get_pending_notes", nativeToScVal(address, { type: "address" })))
+      .setTimeout(5)
+      .build();
+
+    const sim = await this.rpc.simulateTransaction(tx);
+    if (rpc.Api.isSimulationError(sim) || !sim.result) return [];
+
+    const val = scValToNative(sim.result.retval);
+    if (!Array.isArray(val)) return [];
+    return val.map((note: { from: unknown; encrypted_note: Uint8Array | Buffer }) => ({
+      from: String(note.from),
+      encryptedNote: new Uint8Array(note.encrypted_note),
+    }));
+  }
+
+  async getNotePubkey(address: string): Promise<Uint8Array | null> {
+    const dummyKeypair = Keypair.random();
+    const dummyAccount = await this.rpc
+      .getAccount(dummyKeypair.publicKey())
+      .catch(() => ({
+        id: dummyKeypair.publicKey(),
+        sequenceNumber: () => "0",
+        incrementSequenceNumber: () => {},
+        accountId: () => dummyKeypair.publicKey(),
+        sequence: "0",
+        subentryCount: 0,
+        inflationDest: null,
+        homeDomain: "",
+        thresholds: { lowThreshold: 0, medThreshold: 0, highThreshold: 0 },
+        flags: { authRequired: false, authRevocable: false, authImmutable: false },
+        balances: [],
+        signers: [],
+        data: {},
+      } as never));
+
+    const tx = new TransactionBuilder(dummyAccount as never, {
+      fee: "100",
+      networkPassphrase: this.networkPassphrase(),
+    })
+      .addOperation(
+        this.contract.call(
+          "get_note_pubkey",
+          nativeToScVal(address, { type: "address" })
+        )
+      )
+      .setTimeout(5)
+      .build();
+
+    const sim = await this.rpc.simulateTransaction(tx);
+    if (rpc.Api.isSimulationError(sim)) return null;
+    if (!sim.result) return null;
+
+    const val = scValToNative(sim.result.retval);
+    if (!val) return null;
+    // val is Uint8Array (BytesN<32> from the contract)
+    return val instanceof Uint8Array ? val : null;
   }
 }

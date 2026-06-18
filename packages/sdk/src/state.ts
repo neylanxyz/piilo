@@ -20,6 +20,16 @@ export interface LocalState {
 
 const EMPTY: LocalState = { balance: 0n, r: 0n, pendingNotes: [] };
 
+// JubJub H generator has group order 4*r_J, not FR_Q.
+// Blinding factors accumulate mod this value so the circuit (Num2Bits(255)) can
+// always accept the accumulated value: 4*r_J < FR_Q < 2^255.
+// r_J = ZCash JubJub prime-order subgroup order.
+const JUBJUB_H_ORDER = 26217937587563095239723870254092982918823685063489269125461436649568733016796n;
+
+function addBlindMod(a: bigint, b: bigint): bigint {
+  return (a + b) % JUBJUB_H_ORDER;
+}
+
 function storageKey(address: string): string {
   return `piilo:state:${address}`;
 }
@@ -29,9 +39,10 @@ export function loadState(address: string): LocalState {
   const raw = localStorage.getItem(storageKey(address));
   if (!raw) return { ...EMPTY, pendingNotes: [] };
   const parsed = JSON.parse(raw);
+  const rawR = BigInt(parsed.r);
   return {
     balance: BigInt(parsed.balance),
-    r: BigInt(parsed.r),
+    r: rawR % JUBJUB_H_ORDER,  // reduce to group order of H; handles unreduced integer sums
     pendingNotes: (parsed.pendingNotes ?? []).map((n: { from: string; amount: string; r_A: string }) => ({
       from: n.from,
       amount: BigInt(n.amount),
@@ -57,12 +68,10 @@ export function saveState(address: string, state: LocalState): void {
 }
 
 export function applyDeposit(state: LocalState, amount: bigint, r_dep: bigint): LocalState {
-  if (state.balance === 0n && state.r === 0n) {
-    // First deposit: r is just r_dep.
-    return { ...state, balance: state.balance + amount, r: r_dep };
-  }
-  // Subsequent deposit: blinding factors add (homomorphism — C_old + C_new = C(B+amount, r+r_dep)).
-  return { ...state, balance: state.balance + amount, r: state.r + r_dep };
+  // Blinding factors add homomorphically (C_old + C_dep = C(B+amount, r+r_dep)).
+  // Reduce mod the group order of H so the accumulated r stays in [0, 4*r_J)
+  // and the circuit's Num2Bits(255) can always decompose it.
+  return { ...state, balance: state.balance + amount, r: addBlindMod(state.r, r_dep) };
 }
 
 export function applySend(state: LocalState, amount: bigint, r_new: bigint): LocalState {
@@ -78,7 +87,7 @@ export function applySettle(state: LocalState): LocalState {
   const totalR = state.pendingNotes.reduce((s, n) => s + n.r_A, 0n);
   return {
     balance: state.balance + totalAmount,
-    r: state.r + totalR,
+    r: addBlindMod(state.r, totalR),
     pendingNotes: [],
   };
 }

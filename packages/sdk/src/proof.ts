@@ -32,16 +32,16 @@ export interface GrothProof {
   pi_c: [string, string];
 }
 
-// Resolve paths relative to this file (works in both Node and bundlers that
-// support import.meta.url, e.g. Vite).
+// Resolve the circuit asset path for both Node.js (tests) and the browser.
 function assetPath(rel: string): string {
-  // In browser bundlers, override PIILO_ASSET_BASE via build config to point
-  // at your CDN or public/ directory.
-  const base =
-    typeof process !== "undefined"
-      ? new URL("../../../circuits/build/", import.meta.url).pathname
-      : "/circuits/build/";
-  return `${base}${rel}`;
+  // Browser (dev + Vercel): served from public/circuits/ at the server root.
+  if (typeof window !== "undefined") return `/circuits/${rel}`;
+
+  // Node.js (tests): resolve to the filesystem path.
+  // Two-step construction prevents Vite from seeing a template literal with
+  // import.meta.url and glob-bundling every file in circuits/build/.
+  const repoRoot = new URL("../../../", import.meta.url);
+  return new URL(`circuits/build/${rel}`, repoRoot).pathname;
 }
 
 function bigintToField(v: bigint): string {
