@@ -14,10 +14,12 @@ circuits/build/withdraw_0.zkey
 # circomlib is tracked as a git submodule
 # (do not commit its .git directory or files directly)
 
-# SDK / Frontend
+# SDK / Frontend / Examples
 packages/*/node_modules/
 packages/*/dist/
 packages/*/.next/
+examples/*/node_modules/
+examples/*/dist/
 
 # Environment / secrets
 .env
