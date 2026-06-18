@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Model — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="privacy-model.html" class="active"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="../api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="../api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="../api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="../api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="../api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="../api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="../api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div>
+        <h1 data-i18n="page.privacy.h1"data-i18n="nav.privacy-model">Privacy Model</h1>
+        <p class="page-intro" data-i18n="page.privacy.intro">Piilo provides <strong>amount privacy</strong> for transfers on Stellar. This document defines exactly what is hidden, what is visible, and the threat model.</p>
+      </div>
+
+      <h2>What is hidden</h2>
+      <table>
+        <thead><tr><th>Information</th><th>Hidden from whom</th></tr></thead>
+        <tbody>
+          <tr><td>Your current balance</td><td>Everyone except you</td></tr>
+          <tr><td>Transfer amounts</td><td>Everyone except sender and recipient</td></tr>
+          <tr><td>Your blinding factor <code>r</code></td><td>Everyone except you</td></tr>
+        </tbody>
+      </table>
+
+      <h2>What is visible</h2>
+      <table>
+        <thead><tr><th>Information</th><th>Visible to</th></tr></thead>
+        <tbody>
+          <tr><td>That you deposited XLM</td><td>Public (Stellar network)</td></tr>
+          <tr><td>The deposit amount</td><td>Public (initial deposit only)</td></tr>
+          <tr><td>Who you send to</td><td>Public (recipient address)</td></tr>
+          <tr><td>That a transfer occurred</td><td>Public (transfer tx, but not the amount)</td></tr>
+          <tr><td>That you withdrew XLM</td><td>Public</td></tr>
+          <tr><td>The withdrawal amount</td><td>Public</td></tr>
+        </tbody>
+      </table>
+      <blockquote><p><strong>The deposit and withdrawal amounts are public.</strong> If you deposit 5 XLM and later withdraw 3 XLM, an observer knows you sent at least 2 XLM in private transfers — but not to whom, and not in how many separate payments.</p></blockquote>
+
+      <h2>Threat model</h2>
+
+      <h3>Honest-but-curious chain observer</h3>
+      <p>An observer watching the Stellar ledger sees your account address, the smart contract address, "transfer" events with no amounts, and the on-chain commitment point (an opaque elliptic curve point).</p>
+      <p>They <strong>cannot</strong> determine your balance, the amount of any private transfer, or the amounts you sent to specific recipients.</p>
+
+      <h3>Recipient collusion</h3>
+      <p>If a recipient colludes with an observer, they can reveal the amount they received. They cannot reveal your balance or other transfers.</p>
+
+      <h3>Contract operator</h3>
+      <p>Piilo's Soroban contract has no admin key, no upgradeability after deployment, and no backdoor. The contract operator has no special access to user data.</p>
+
+      <h3>Lost local state</h3>
+      <p>If <code>localStorage</code> is cleared (or you switch devices without a backup), you lose your local <code>balance</code> and blinding factor <code>r</code>. The XLM is still in the contract — you cannot withdraw it without <code>r</code>.</p>
+      <p>Recovery options:</p>
+      <ol>
+        <li><strong>Backup file</strong> (recommended): see <a href="../api/backup.html">exportBackup</a></li>
+        <li><strong>RPC event window</strong>: within ~7 days of your last deposit, the RPC node retains events that contain your encrypted notes.</li>
+      </ol>
+
+      <h3>Compromised browser / device</h3>
+      <p>If an attacker has access to your <code>localStorage</code> they can read your balance and blinding factor. Piilo does not defend against a compromised execution environment.</p>
+
+      <h3>ZK proof soundness</h3>
+      <p>The security of Piilo's amount-hiding relies on the soundness of the Groth16 proof system and the discrete log hardness on JubJub. The trusted setup for the Groth16 circuits requires at least one participant to have destroyed their toxic waste.</p>
+
+      <h2>Summary</h2>
+      <blockquote>
+        <p><strong>Confidential transfers on Stellar</strong> — the amounts of individual transfers and current balances are hidden, but the graph of who sends to whom is not.</p>
+      </blockquote>
+      <p>If you need sender/recipient anonymity in addition to amount privacy, Piilo alone is not sufficient.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

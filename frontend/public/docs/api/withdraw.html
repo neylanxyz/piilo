@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>withdraw() — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="withdraw.html" class="active"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
+        <h1data-i18n="nav.withdraw">withdraw()</h1>
+      </div>
+
+      <div class="method-sig">async withdraw(): Promise&lt;void&gt;</div>
+
+      <p>Withdraws the full balance. Generates a ZK proof of balance knowledge, submits it on-chain, and receives XLM back to the Stellar account.</p>
+
+      <h2>What happens</h2>
+      <ol>
+        <li>Reads local <code>balance</code> and <code>r</code> from state</li>
+        <li>Fetches the current on-chain commitment <code>C_B</code></li>
+        <li>Generates a Groth16 withdrawal proof <code>π</code> proving <code>C_B = balance·G + r·H</code></li>
+        <li>Submits <code>contract.withdraw(user, balance, π)</code> on-chain</li>
+        <li>The contract verifies <code>π</code>, transfers <code>balance</code> stroops to the user's Stellar account, and deletes the account entry</li>
+        <li>Local state is reset: <code>&#123; balance: 0n, r: 0n, pendingNotes: [] &#125;</code></li>
+      </ol>
+
+      <h2>Throws</h2>
+      <table>
+        <thead><tr><th>Error</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><code>"no balance to withdraw"</code></td><td><code>balance === 0n</code></td></tr>
+          <tr><td><code>"no on-chain account"</code></td><td>Account entry does not exist on-chain</td></tr>
+          <tr><td>snarkjs error</td><td>Proof generation failed</td></tr>
+          <tr><td>Stellar RPC error</td><td>Proof verification failed, transaction rejected</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Example</h2>
+      <pre><code class="language-typescript">const balance = await piilo.getBalance()
+console.log(`Withdrawing ${balance / 10_000_000n} XLM`)
+
+await piilo.withdraw()
+
+console.log('Done. Balance:', await piilo.getBalance())
+// → 0n</code></pre>
+
+      <h2>Partial withdrawal</h2>
+      <p>The current implementation withdraws the <strong>full balance</strong> only. To send a partial amount, use <a href="transfer.html"><codedata-i18n="nav.transfer">transfer()</code></a> to send privately to yourself and then <codedata-i18n="nav.withdraw">withdraw()</code> from that second account.</p>
+
+      <h2>Pending transfers</h2>
+      <p>If you have pending incoming transfers (<code>has_pending = true</code>), call <a href="settle.html"><codedata-i18n="nav.settle">settleIfPending()</code></a> <strong>before</strong> <codedata-i18n="nav.withdraw">withdraw()</code>. Otherwise you will withdraw only your settled balance and the pending amounts remain locked — but your account entry is deleted.</p>
+
+      <h2>Duration</h2>
+      <p>Proof generation takes approximately 2–5 seconds. The withdrawal proof is slightly faster than the transfer proof because it has fewer constraints.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

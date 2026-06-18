@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>exportBackup() / importBackup() — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="backup.html" class="active"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
+        <h1data-i18n="nav.backup">exportBackup() / importBackup()</h1>
+      </div>
+
+      <h2>exportBackup()</h2>
+      <div class="method-sig">async exportBackup(): Promise&lt;string&gt;</div>
+      <p>Exports the current local state as a JSON string.</p>
+      <pre><code class="language-typescript">const json = await piilo.exportBackup()
+// → '{"version":1,"address":"G...","balance":"50000000","r":"4291873..."}'</code></pre>
+
+      <h3>Backup format</h3>
+      <pre><code class="language-typescript">{
+  version: 1
+  address: string   // Stellar address this backup belongs to
+  balance: string   // balance in stroops (bigint serialized as string)
+  r:       string   // blinding factor (bigint serialized as string)
+}</code></pre>
+
+      <blockquote><p><strong>Security warning:</strong> The backup contains your plaintext balance and blinding factor. Store it as securely as a private key. Anyone who obtains your backup can determine your balance. The SDK does not encrypt the backup — do so yourself if needed.</p></blockquote>
+
+      <h3>When to export</h3>
+      <p>Export after every state-changing operation:</p>
+      <ul>
+        <li>After <codedata-i18n="nav.deposit">deposit()</code></li>
+        <li>After <codedata-i18n="nav.transfer">transfer()</code></li>
+        <li>After <codedata-i18n="nav.settle">settleIfPending()</code> (if it returned non-null)</li>
+      </ul>
+      <p>The <code>pendingNotes</code> array is intentionally excluded from the backup — it is reconstructed from on-chain event data during recovery.</p>
+
+      <hr>
+
+      <h2>importBackup()</h2>
+      <div class="method-sig">async importBackup(json: string): Promise&lt;&#123; balance: bigint &#125;&gt;</div>
+      <p>Restores local state from a backup string. Verifies the backup matches the current on-chain commitment before writing.</p>
+
+      <h3>Parameters</h3>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>json</code></td><td><code>string</code></td><td>A JSON string previously produced by <code>exportBackup()</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Returns</h3>
+      <p><code>&#123; balance: bigint &#125;</code> — the restored balance in stroops.</p>
+
+      <h3>Throws</h3>
+      <table>
+        <thead><tr><th>Error</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><code>"Unknown backup version N"</code></td><td>Unsupported backup format</td></tr>
+          <tr><td><code>"Backup belongs to ..., connected wallet is ..."</code></td><td>Address mismatch</td></tr>
+          <tr><td><code>"No on-chain account — deposit first, then restore"</code></td><td>No commitment on-chain for verification</td></tr>
+          <tr><td><code>"Backup does not match on-chain commitment"</code></td><td>Balance or <code>r</code> in the backup differ from the current on-chain commitment</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+      <pre><code class="language-typescript">// Export (do this after every operation)
+const backup = await piilo.exportBackup()
+await secureStorage.save('piilo-backup', backup)
+
+// Import on a new device
+const json = await secureStorage.load('piilo-backup')
+const { balance } = await piilo.importBackup(json)
+console.log(`Restored balance: ${balance / 10_000_000n} XLM`)</code></pre>
+
+      <h3>Stale backups</h3>
+      <p>If you made operations after exporting the backup, the backup will not match the current on-chain commitment and import will fail. You need the most recent backup.</p>
+      <p>If you have no recent backup and no recovery path, see <a href="../concepts/local-state.html#recovery-from-event-window">Local State — Recovery from event window</a>.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

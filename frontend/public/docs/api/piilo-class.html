@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Piilo class — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="piilo-class.html" class="active"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
+        <h1 data-i18n="page.piiloclass.h1"data-i18n="nav.piilo-class">Piilo class</h1>
+        <p class="page-intro" data-i18n="page.piiloclass.intro">The main entry point of the SDK. Coordinates local state, proof generation, note encryption, and Stellar transaction submission.</p>
+      </div>
+
+      <h2>Import</h2>
+      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'</code></pre>
+
+      <h2>Constructor</h2>
+      <div class="method-sig">new Piilo(config: PiiloConfig)</div>
+
+      <h3>PiiloConfig</h3>
+      <pre><code class="language-typescript">interface PiiloConfig {
+  /** "testnet" or "mainnet" */
+  network: Network
+
+  /** Deployed Piilo contract address (starts with "C") */
+  contractId: string
+
+  /** Wallet adapter that provides signing capabilities */
+  wallet: WalletAdapter & WalletSigner
+
+  /**
+   * Optional relay URL for fee sponsorship.
+   * The relay cannot access funds — it only covers fees.
+   */
+  relayUrl?: string
+}</code></pre>
+
+      <h3>WalletAdapter</h3>
+      <pre><code class="language-typescript">interface WalletAdapter {
+  publicKey(): Promise&lt;string&gt;
+  signTransaction(
+    xdr: string,
+    opts?: { networkPassphrase?: string }
+  ): Promise&lt;string&gt;
+}</code></pre>
+
+      <h3>WalletSigner</h3>
+      <pre><code class="language-typescript">interface WalletSigner {
+  signMessage(message: string): Promise&lt;{ signature: Uint8Array }&gt;
+}</code></pre>
+
+      <h2>Methods</h2>
+
+      <h3>getBalance()</h3>
+      <div class="method-sig">async getBalance(): Promise&lt;bigint&gt;</div>
+      <p>Returns the current local plaintext balance in stroops. Does <strong>not</strong> make a network call — reads from <code>localStorage</code>.</p>
+      <pre><code class="language-typescript">const balance = await piilo.getBalance()
+console.log(`${balance / 10_000_000n} XLM`)</code></pre>
+
+      <hr>
+
+      <h3data-i18n="nav.deposit">deposit()</h3>
+      <div class="method-sig">async deposit(amount: bigint): Promise&lt;void&gt;</div>
+      <p>Deposits <code>amount</code> stroops into the confidential account. The deposit amount is publicly visible on-chain.</p>
+      <p><a href="deposit.html">→ Full deposit() docs</a></p>
+
+      <hr>
+
+      <h3data-i18n="nav.transfer">transfer()</h3>
+      <div class="method-sig">async transfer(params: &#123; to: string; amount: bigint &#125;): Promise&lt;void&gt;</div>
+      <p>Sends <code>amount</code> privately to <code>to</code>. Generates a Groth16 proof (~2–5 seconds) and encrypts the payment note for the recipient.</p>
+      <p><a href="transfer.html">→ Full transfer() docs</a></p>
+
+      <hr>
+
+      <h3data-i18n="nav.settle">settleIfPending()</h3>
+      <div class="method-sig">async settleIfPending(): Promise&lt;&#123; received: bigint &#125; | null&gt;</div>
+      <p>Checks for pending incoming transfers. If found, decrypts the payment notes, settles on-chain, and updates local state.</p>
+      <p><a href="settle.html">→ Full settleIfPending() docs</a></p>
+
+      <hr>
+
+      <h3data-i18n="nav.withdraw">withdraw()</h3>
+      <div class="method-sig">async withdraw(): Promise&lt;void&gt;</div>
+      <p>Withdraws the full balance. Generates a Groth16 proof of balance knowledge and resets local state to zero.</p>
+      <p><a href="withdraw.html">→ Full withdraw() docs</a></p>
+
+      <hr>
+
+      <h3>exportBackup()</h3>
+      <div class="method-sig">async exportBackup(): Promise&lt;string&gt;</div>
+      <p>Returns a JSON string containing the current local state. Treat the output like a private key.</p>
+
+      <hr>
+
+      <h3>importBackup()</h3>
+      <div class="method-sig">async importBackup(json: string): Promise&lt;&#123; balance: bigint &#125;&gt;</div>
+      <p>Restores local state from a backup JSON string. Verifies the backup matches the current on-chain commitment before writing.</p>
+      <p><a href="backup.html">→ Full backup docs</a></p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

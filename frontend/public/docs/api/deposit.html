@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>deposit() — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="deposit.html" class="active"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
+        <h1data-i18n="nav.deposit">deposit()</h1>
+      </div>
+
+      <div class="method-sig">async deposit(amount: bigint): Promise&lt;void&gt;</div>
+
+      <p>Deposits <code>amount</code> stroops into the Piilo contract. This is the entry point into the confidential system.</p>
+
+      <h2>What happens</h2>
+      <ol>
+        <li>A random blinding factor <code>r</code> is generated: <code>r ← Fr</code></li>
+        <li>The commitment <code>C = amount·G + r·H</code> is computed locally</li>
+        <li>A Stellar transaction is submitted calling <code>deposit(user, amount, r, note_pubkey)</code> on the contract</li>
+        <li>The contract updates (or creates) the user's <code>balance_commitment</code>:
+          <ul>
+            <li><strong>First deposit:</strong> <code>balance_commitment = C</code></li>
+            <li><strong>Subsequent deposits:</strong> <code>balance_commitment = old_commitment + C</code> (homomorphic addition)</li>
+          </ul>
+        </li>
+        <li>Local state is updated: <code>balance += amount</code>, <code>r = (old_r + r_dep) mod JubJub_H_order</code></li>
+      </ol>
+
+      <h2>Parameters</h2>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>amount</code></td><td><code>bigint</code></td><td>Amount to deposit, in stroops. Must be positive.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Throws</h2>
+      <table>
+        <thead><tr><th>Error</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><code>"amount must be positive"</code></td><td><code>amount &lt;= 0n</code></td></tr>
+          <tr><td>Stellar RPC error</td><td>Insufficient XLM balance, simulation failure, transaction rejection</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Visibility</h2>
+      <p>The deposit amount is <strong>publicly visible</strong> on the Stellar ledger. This is the only moment in the Piilo lifecycle where an amount is observable on-chain. All subsequent transfers and the final balance are hidden.</p>
+
+      <h2>Example</h2>
+      <pre><code class="language-typescript">// Deposit 10 XLM (in stroops)
+await piilo.deposit(100_000_000n)
+
+// Multiple deposits accumulate homomorphically
+await piilo.deposit(50_000_000n)
+
+const balance = await piilo.getBalance()
+// → 150_000_000n (15 XLM)</code></pre>
+
+      <h2>Blinding factor accumulation</h2>
+      <p>Each deposit generates a fresh random <code>r_dep</code>. The stored blinding factor accumulates:</p>
+      <pre><code class="language-plaintext">new_r = (old_r + r_dep) mod JUBJUB_H_ORDER</code></pre>
+      <p>This preserves the homomorphic property: the on-chain commitment is always <code>balance·G + r·H</code>, where <code>r</code> is the accumulated sum of all deposit blinding factors.</p>
+
+      <h2>Note public key</h2>
+      <p>On the first deposit, the SDK registers the user's NaCl note public key on-chain. This key allows others to send encrypted payment notes to this address. The note keypair is derived deterministically from <code>wallet.signMessage("piilo-note-v1")</code>.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

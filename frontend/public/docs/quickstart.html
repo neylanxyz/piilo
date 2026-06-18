@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quickstart — Piilo Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="quickstart.html" class="active"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb" data-i18n="breadcrumb.start">Getting Started</div>
+        <h1 data-i18n="page.quickstart.h1"data-i18n="nav.quickstart">Quickstart</h1>
+        <p class="page-intro" data-i18n="page.quickstart.intro">From zero to a working confidential transfer on Stellar testnet in under 5 minutes.</p>
+      </div>
+
+      <h2>Prerequisites</h2>
+      <ul>
+        <li>Node.js 18+</li>
+        <li>A Stellar testnet account with XLM (use <a href="https://lab.stellar.org" target="_blank" rel="noopener">Stellar Laboratory</a> to fund one)</li>
+        <li><a href="https://freighter.app" target="_blank" rel="noopener">Freighter</a> browser extension (or a custom <code>WalletAdapter</code>)</li>
+      </ul>
+
+      <h2>1. Install</h2>
+      <pre><code class="language-bash">npm install @piilo/sdk</code></pre>
+      <p>The package ships with TypeScript types. No separate <code>@types/</code> install required.</p>
+
+      <h2>2. Serve the circuit files</h2>
+      <p>Piilo generates ZK proofs in the browser using WASM circuit files. These must be served from your web server under <code>/circuits/</code>:</p>
+      <pre><code class="language-plaintext">public/
+  circuits/
+    transfer_1.zkey
+    transfer_js/
+      transfer.wasm
+    withdraw_1.zkey
+    withdraw_js/
+      withdraw.wasm</code></pre>
+      <pre><code class="language-bash">cp -r node_modules/@piilo/sdk/circuits public/circuits</code></pre>
+      <blockquote><p><strong>Note:</strong> The <code>.zkey</code> files are large (~10 MB each). Serve them with appropriate caching headers and consider a CDN for production. See <a href="guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a>.</p></blockquote>
+
+      <h2>3. Configure and instantiate</h2>
+      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+
+const wallet = {
+  async publicKey() {
+    return window.freighter.getPublicKey()
+  },
+  async signTransaction(xdr, opts) {
+    return window.freighter.signTransaction(xdr, opts)
+  },
+  async signMessage(message) {
+    const result = await window.freighter.signMessage(message)
+    return { signature: result.signature }
+  },
+}
+
+const piilo = new Piilo({
+  network:    'testnet',
+  contractId: 'C…',       // deployed Piilo contract address
+  wallet,
+})</code></pre>
+
+      <h2>4. Deposit</h2>
+      <p>The first operation is always a deposit. The amount is in <strong>stroops</strong> (1 XLM = 10,000,000 stroops):</p>
+      <pre><code class="language-typescript">// Deposit 5 XLM
+await piilo.deposit(50_000_000n)
+
+console.log('Balance:', await piilo.getBalance())
+// → 50000000n</code></pre>
+      <p>The deposit transaction is public. After it settles, your balance is tracked locally as a Pedersen commitment — no further operations reveal the amount.</p>
+
+      <h2>5. Transfer privately</h2>
+      <pre><code class="language-typescript">// Send 2 XLM to another address
+await piilo.transfer({
+  to:     'GABC…recipient',
+  amount: 20_000_000n,
+})</code></pre>
+      <p>This will:</p>
+      <ol>
+        <li>Generate a Groth16 proof in your browser (~2–5 seconds)</li>
+        <li>Encrypt a payment note for the recipient</li>
+        <li>Submit the transfer transaction</li>
+      </ol>
+
+      <h2>6. Settle incoming transfers</h2>
+      <p>Recipients must call <code>settleIfPending</code> to merge received notes into their balance:</p>
+      <pre><code class="language-typescript">const result = await piilo.settleIfPending()
+
+if (result) {
+  console.log('Received:', result.received, 'stroops')
+}</code></pre>
+
+      <h2>7. Withdraw</h2>
+      <pre><code class="language-typescript">await piilo.withdraw()</code></pre>
+      <p>Generates a Groth16 proof of balance knowledge, submits it on-chain, and the contract releases the XLM. Local state resets to zero.</p>
+
+      <h2>8. Back up your state</h2>
+      <p>Your balance and blinding factor live only in <code>localStorage</code>. Back them up after every significant operation:</p>
+      <pre><code class="language-typescript">const backup = await piilo.exportBackup()
+// Store this string securely — treat it like a private key.
+localStorage.setItem('piilo-backup', backup)
+
+// To restore on a new device:
+const json = localStorage.getItem('piilo-backup')
+await piilo.importBackup(json)</code></pre>
+
+      <h2>Full example</h2>
+      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+
+const piilo = new Piilo({ network: 'testnet', contractId: 'C…', wallet })
+
+// Deposit 10 XLM
+await piilo.deposit(100_000_000n)
+
+// Send 3 XLM to a friend
+await piilo.transfer({ to: 'GABC…', amount: 30_000_000n })
+
+// Check remaining balance (local, no network call)
+const balance = await piilo.getBalance()
+console.log(balance) // 70000000n
+
+// Withdraw everything
+await piilo.withdraw()</code></pre>
+
+      <h2>Next steps</h2>
+      <ul>
+        <li><a href="concepts/architecture.html"data-i18n="nav.architecture">Architecture</a> — understand how the ZK proofs and commitments work</li>
+        <li><a href="concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a> — what is and isn't hidden</li>
+        <li><a href="guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a> — production-ready wallet adapter</li>
+        <li><a href="guides/security.html"data-i18n="nav.security">Security Guide</a> — protect your blinding factor</li>
+      </ul>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

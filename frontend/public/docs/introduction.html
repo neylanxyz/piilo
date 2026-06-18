@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Introduction — Piilo Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+
+  <!-- Top bar -->
+  <header class="docs-topbar">
+    <a href="../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo">
+      Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+
+  <!-- Sidebar -->
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="introduction.html" class="active"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb" data-i18n="breadcrumb.start">Getting Started</div>
+        <h1 data-i18n="page.introduction.h1"data-i18n="nav.introduction">Introduction</h1>
+        <p class="page-intro" data-i18n="page.introduction.intro">Piilo is a zero-knowledge private payments protocol built on Stellar. Deposit XLM, transfer it privately, and withdraw — without any observer learning your balance or transfer amounts.</p>
+      </div>
+
+      <h2>What Piilo does</h2>
+      <p>When you deposit XLM into the Piilo contract, the amount is recorded publicly <strong>once</strong> — this is unavoidable; the XLM has to move from your account. From that moment on, all subsequent operations are private:</p>
+      <ul>
+        <li><strong>Balances</strong> are stored as <a href="concepts/architecture.html#pedersen-commitments">Pedersen commitments</a> — elliptic curve points on the JubJub curve. The chain sees a point, not a number.</li>
+        <li><strong>Transfers</strong> produce a <a href="concepts/architecture.html#groth16-zk-proofs">Groth16 ZK proof</a> generated entirely in the user's browser. The recipient receives an encrypted note — only their key can open it.</li>
+        <li><strong>Withdrawals</strong> require the user to generate a proof of balance knowledge. The contract verifies the proof and releases XLM. No trusted party sees the plaintext balance.</li>
+      </ul>
+
+      <h2>What Piilo does NOT do</h2>
+      <ul>
+        <li><strong>Piilo is not a mixer.</strong> There is no anonymity pool, no unlinkability between depositor and withdrawer. The contract knows which address holds which commitment; it doesn't know the value.</li>
+        <li><strong>Piilo does not hide who you send to.</strong> The recipient address of a transfer is on-chain. Piilo hides the amount, not the counterparty.</li>
+        <li><strong>Piilo does not provide forward secrecy.</strong> If your local state (blinding factor <code>r</code>) is compromised, an attacker can compute your balance from the on-chain commitment.</li>
+      </ul>
+      <p>See <a href="concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a> for the full threat model.</p>
+
+      <h2>The SDK</h2>
+      <p>The <code>@piilo/sdk</code> package exposes a single class, <code>Piilo</code>, with five public methods:</p>
+      <table>
+        <thead><tr><th>Method</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code><a href="api/deposit.html">deposit(amount)</a></code></td><td>Deposit XLM, create a Pedersen commitment</td></tr>
+          <tr><td><code><a href="api/transfer.html">transfer({ to, amount })</a></code></td><td>Send privately with a ZK proof + encrypted note</td></tr>
+          <tr><td><code><a href="api/settle.html"data-i18n="nav.settle">settleIfPending()</a></code></td><td>Merge incoming transfers into your balance</td></tr>
+          <tr><td><code><a href="api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></code></td><td>Prove balance knowledge, receive XLM</td></tr>
+          <tr><td><code><a href="api/backup.html">exportBackup() / importBackup(json)</a></code></td><td>Back up and restore local state</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Quick links</h2>
+      <ul>
+        <li><a href="quickstart.html"data-i18n="nav.quickstart">Quickstart</a> — install, configure, first transfer in 5 minutes</li>
+        <li><a href="concepts/architecture.html"data-i18n="nav.architecture">Architecture</a> — how the ZK proof and commitment system works</li>
+        <li><a href="api/piilo-class.html">API Reference</a> — full method signatures and options</li>
+        <li><a href="guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a> — connect to Freighter wallet</li>
+        <li><a href="guides/security.html"data-i18n="nav.security">Security Guide</a> — how to protect the blinding factor</li>
+      </ul>
+    </article>
+  </main>
+
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

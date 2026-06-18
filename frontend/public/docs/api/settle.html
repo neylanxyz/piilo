@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>settleIfPending() — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="settle.html" class="active"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
+        <h1data-i18n="nav.settle">settleIfPending()</h1>
+      </div>
+
+      <div class="method-sig">async settleIfPending(): Promise&lt;&#123; received: bigint &#125; | null&gt;</div>
+
+      <p>Merges incoming transfers into the local balance. Must be called before received funds can be spent or withdrawn.</p>
+
+      <h2>What happens</h2>
+      <ol>
+        <li>Checks the on-chain account: is <code>has_pending = true</code>?</li>
+        <li>If no pending transfers, returns <code>null</code> immediately (no transaction submitted)</li>
+        <li>Fetches all encrypted notes from <code>contract.get_pending_notes(address)</code></li>
+        <li>Decrypts each note using the user's note keypair</li>
+        <li>Calls <code>contract.settle_pending(address)</code> on-chain:
+          <ul>
+            <li>Adds <code>pending_commitment</code> to <code>balance_commitment</code></li>
+            <li>Clears <code>pending_commitment</code> and <code>pending_notes</code></li>
+            <li>Sets <code>has_pending = false</code></li>
+          </ul>
+        </li>
+        <li>Updates local state: <code>balance += sum(note.amount)</code>, <code>r = (r + sum(note.r_A)) mod JubJub_H_order</code></li>
+      </ol>
+
+      <h2>Returns</h2>
+      <ul>
+        <li><code>&#123; received: bigint &#125;</code> — total stroops received, if there were pending transfers</li>
+        <li><code>null</code> — if no transfers were pending</li>
+      </ul>
+
+      <h2>Throws</h2>
+      <table>
+        <thead><tr><th>Error</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td>Stellar RPC error</td><td>Transaction failed</td></tr>
+          <tr><td>Note decryption error</td><td>Malformed or tampered encrypted note (logged, note skipped)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Example</h2>
+      <pre><code class="language-typescript">const result = await piilo.settleIfPending()
+
+if (result === null) {
+  console.log('No incoming transfers')
+} else {
+  console.log(`Received ${result.received / 10_000_000n} XLM`)
+  console.log('New balance:', await piilo.getBalance())
+}</code></pre>
+
+      <h2>Polling pattern</h2>
+      <pre><code class="language-typescript">async function checkForIncoming() {
+  const result = await piilo.settleIfPending()
+  if (result) {
+    showNotification(`Received ${result.received / 10_000_000n} XLM`)
+    refreshBalanceDisplay()
+  }
+}
+
+checkForIncoming()
+setInterval(checkForIncoming, 30_000)</code></pre>
+
+      <h2>Note on atomicity</h2>
+      <p><code>settle_pending</code> is a single Stellar transaction. Either all pending notes are settled together, or none are. There is no partial settlement.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="architecture.html" class="active"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="../api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="../api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="../api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="../api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="../api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="../api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="../api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div>
+        <h1 data-i18n="page.architecture.h1"data-i18n="nav.architecture">Architecture</h1>
+        <p class="page-intro" data-i18n="page.architecture.intro">Piilo combines three cryptographic building blocks: Pedersen commitments on the JubJub curve, Groth16 ZK proofs verified on-chain by a Soroban smart contract, and NaCl box encryption for payment notes.</p>
+      </div>
+
+      <h2>System overview</h2>
+      <pre><code class="language-plaintext">User browser                    Stellar / Soroban
+────────────────────            ──────────────────────────────
+Local state                     Contract storage
+  balance: bigint         ↔       balance_commitment: Point
+  r: bigint (blinding)            pending_commitment: Point
+  pendingNotes: Note[]            note_pubkey: Bytes&lt;32&gt;
+                                  pending_notes: Vec&lt;EncNote&gt;
+
+SDK operations
+  deposit()      →   Stellar tx: deposit(amount, r, note_pubkey)
+  transfer()     →   Stellar tx: transfer(to, C_A, C_new, proof, enc_note)
+  settleIfPending() → Stellar tx: settle_pending(user)
+  withdraw()     →   Stellar tx: withdraw(amount, proof)</code></pre>
+
+      <h2>Pedersen commitments</h2>
+      <p>A Pedersen commitment to a value <code>v</code> with blinding factor <code>r</code> is:</p>
+      <pre><code class="language-plaintext">C = v·G + r·H</code></pre>
+      <p>where <code>G</code> and <code>H</code> are independent generators on the JubJub twisted Edwards curve, and <code>·</code> denotes scalar multiplication.</p>
+      <p><strong>Properties:</strong></p>
+      <ul>
+        <li><strong>Hiding:</strong> <code>C</code> reveals nothing about <code>v</code> without <code>r</code></li>
+        <li><strong>Binding:</strong> you cannot open the same <code>C</code> to two different <code>(v, r)</code> pairs</li>
+        <li><strong>Additively homomorphic:</strong> <code>C(v₁, r₁) + C(v₂, r₂) = C(v₁+v₂, r₁+r₂)</code></li>
+      </ul>
+      <p>The homomorphic property is why transfers can accumulate without decryption — the contract adds commitment points, and the user's local state accumulates the corresponding blinding factors.</p>
+
+      <h3>JubJub curve</h3>
+      <p>Piilo uses a custom JubJub parameterization defined in <code>circuits/jubjub.circom</code>:</p>
+      <pre><code class="language-plaintext">// Generator G (for value)
+G = (
+  52011214036797608008763021134739816867182510661071949920602030138765591619595,
+  36017543053724001483519641180346241195937746995850157919072206337752529044138
+)
+
+// Generator H (for blinding)
+H = (
+  2641322346204092426446313763048872749581807614122456322352786044536967383341,
+  12433362859382302755418372944023213970869823563090304431189761096447391844644
+)</code></pre>
+
+      <h2>Groth16 ZK proofs</h2>
+      <p>Piilo uses two Circom circuits compiled to Groth16 SNARKs:</p>
+
+      <h3>Transfer circuit</h3>
+      <p><strong>Public inputs:</strong> <code>C_B</code>, <code>C_A</code>, <code>C_new</code> (three JubJub points = 6 field elements)</p>
+      <p><strong>Private inputs:</strong> <code>B</code> (sender's balance), <code>r_B</code> (balance blinding), <code>A</code> (transfer amount), <code>r_A</code> (amount blinding), <code>r_new</code> (new balance blinding)</p>
+      <p><strong>Constraints proven:</strong></p>
+      <ol>
+        <li><code>C_B = B·G + r_B·H</code> — the sender knows the opening of their balance commitment</li>
+        <li><code>C_A = A·G + r_A·H</code> — the amount commitment is correctly formed</li>
+        <li><code>C_new = (B-A)·G + r_new·H</code> — the new balance commitment is correctly formed</li>
+        <li><code>B ≥ A</code> — sender has sufficient funds (no underflow)</li>
+      </ol>
+
+      <h3>Withdraw circuit</h3>
+      <p><strong>Public inputs:</strong> <code>C_B</code>, <code>B</code> (the withdrawal amount, which equals the full balance)</p>
+      <p><strong>Private inputs:</strong> <code>r_B</code> (balance blinding)</p>
+      <p><strong>Constraints proven:</strong></p>
+      <ol>
+        <li><code>C_B = B·G + r_B·H</code> — the user knows the opening of their commitment</li>
+      </ol>
+
+      <h3>Proof generation</h3>
+      <p>Proofs are generated client-side using <code>snarkjs.groth16.fullProve()</code> with the compiled WASM witness generator and the <code>.zkey</code> file from the trusted setup. Generation takes approximately <strong>2–5 seconds</strong> on a modern laptop.</p>
+
+      <h3>On-chain verification</h3>
+      <p>The Soroban contract at <code>contracts/verifier/</code> implements BLS12-381 pairing-based proof verification in Rust. It verifies Groth16 proofs against the verification key (<code>*_vk.json</code>) that was committed at deploy time.</p>
+
+      <h2>Note encryption</h2>
+      <p>When Alice sends to Bob, Bob needs to know the amount <code>A</code> and blinding factor <code>r_A</code> to update his local balance. This is transmitted via an encrypted <strong>payment note</strong>.</p>
+
+      <h3>Key derivation</h3>
+      <pre><code class="language-typescript">// Sign a domain-separation string with the wallet's Ed25519 key
+const { signature } = await wallet.signMessage("piilo-note-v1")
+// Hash to 32 bytes
+const seed = await crypto.subtle.digest("SHA-256", signature)
+// Derive NaCl box keypair
+const keypair = nacl.box.keyPair.fromSecretKey(seed)</code></pre>
+
+      <h3>Encryption</h3>
+      <pre><code class="language-typescript">const note = nacl.box(
+  JSON.stringify({ amount, r_A }),
+  nonce,
+  recipientPublicKey,
+  senderKeypair.secretKey
+)</code></pre>
+      <p>Uses NaCl box: X25519 key exchange + XSalsa20 stream cipher + Poly1305 MAC.</p>
+
+      <h3>On-chain storage</h3>
+      <p>The encrypted note is serialized as:</p>
+      <pre><code class="language-plaintext">[1 byte version][24 bytes nonce][32 bytes sender_pubkey][N bytes ciphertext]</code></pre>
+      <p>Stored in the contract's <code>pending_notes</code> queue for the recipient, cleared when the recipient calls <code>settle_pending</code>.</p>
+
+      <h2>State model</h2>
+      <h3>On-chain (public)</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>balance_commitment</code></td><td><code>Point</code></td><td>JubJub point: <code>C(balance, r)</code></td></tr>
+          <tr><td><code>pending_commitment</code></td><td><code>Point</code></td><td>Accumulated incoming transfer commitments</td></tr>
+          <tr><td><code>has_pending</code></td><td><code>bool</code></td><td>Whether any pending transfers exist</td></tr>
+          <tr><td><code>nonce</code></td><td><code>u64</code></td><td>Replay protection for withdraw proofs</td></tr>
+          <tr><td><code>note_pubkey</code></td><td><code>Bytes&lt;32&gt;</code></td><td>Recipient's NaCl public key</td></tr>
+          <tr><td><code>pending_notes</code></td><td><code>Vec&lt;EncNote&gt;</code></td><td>Encrypted payment notes from senders</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Off-chain (local)</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>balance</code></td><td><code>bigint</code></td><td>Plaintext balance in stroops</td></tr>
+          <tr><td><code>r</code></td><td><code>bigint</code></td><td>Current blinding factor</td></tr>
+          <tr><td><code>pendingNotes</code></td><td><code>Note[]</code></td><td>Decrypted but unsettled received notes</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Deposit flow</h2>
+      <pre><code class="language-plaintext">1. User calls piilo.deposit(amount)
+2. SDK generates random r ← Fr
+3. SDK calls PiiloStellar.deposit(wallet, amount, r, notePubkey)
+4. Contract: commitment = amount·G + r·H
+             if account exists: balance_commitment += commitment
+             else: create account with balance_commitment = commitment
+5. SDK: saveState(applyDeposit(state, amount, r))
+        new_balance = old_balance + amount
+        new_r       = (old_r + r) mod JubJub_H_order</code></pre>
+
+      <h2>Transfer flow</h2>
+      <pre><code class="language-plaintext">1. User calls piilo.transfer({ to, amount })
+2. SDK fetches current on-chain C_B for sender
+3. SDK generates r_A, r_new ← Fr
+4. SDK computes C_A = amount·G + r_A·H
+               C_new = (balance-amount)·G + r_new·H
+5. SDK calls snarkjs.groth16.fullProve(...)  → proof π
+6. SDK fetches recipient's note_pubkey from contract
+7. SDK encrypts note: NaCl.box({ amount, r_A }, recipientPubkey, senderKeypair)
+8. SDK submits: contract.transfer(sender, recipient, C_A, C_new, π, encrypted_note)
+9. Contract verifies π
+   Updates sender's balance_commitment = C_new
+   Adds C_A to recipient's pending_commitment
+   Stores encrypted_note in recipient's pending_notes
+10. SDK: saveState(applySend(state, amount, r_new))</code></pre>
+
+      <h2>Settle flow</h2>
+      <pre><code class="language-plaintext">1. User calls piilo.settleIfPending()
+2. SDK checks contract: has_pending?
+3. If yes, SDK calls contract.get_pending_notes(address)
+4. SDK decrypts each note: { amount, r_A } = NaCl.open(enc_note, ...)
+5. SDK calls contract.settle_pending(address)
+   Contract: balance_commitment += pending_commitment
+             pending_commitment = identity
+             has_pending = false
+             pending_notes = []
+6. SDK: update local state
+   new_balance += sum(note.amount)
+   new_r = (old_r + sum(note.r_A)) mod JubJub_H_order</code></pre>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

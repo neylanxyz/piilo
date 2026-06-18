@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>transfer() — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="transfer.html" class="active"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
+        <h1data-i18n="nav.transfer">transfer()</h1>
+      </div>
+
+      <div class="method-sig">async transfer(params: &#123; to: string; amount: bigint &#125;): Promise&lt;void&gt;</div>
+
+      <p>Sends <code>amount</code> stroops privately to <code>to</code>. The amount is never revealed on-chain — only a ZK proof attesting to its validity.</p>
+
+      <h2>What happens</h2>
+      <ol>
+        <li>The current on-chain commitment <code>C_B</code> is fetched for the sender</li>
+        <li>Fresh blinding factors <code>r_A</code> and <code>r_new</code> are generated</li>
+        <li>Commitment points are computed: <code>C_A = amount·G + r_A·H</code> and <code>C_new = (balance - amount)·G + r_new·H</code></li>
+        <li>A Groth16 proof <code>π</code> is generated in the browser (proves the commitments are valid and <code>balance ≥ amount</code>)</li>
+        <li>The recipient's note public key is fetched from the contract</li>
+        <li>A payment note <code>&#123; amount, r_A &#125;</code> is encrypted for the recipient via NaCl box</li>
+        <li>The transaction is submitted on-chain; the contract verifies <code>π</code>, updates the sender's commitment, and stores the encrypted note for the recipient</li>
+        <li>Local state: <code>balance -= amount</code>, <code>r = r_new</code></li>
+      </ol>
+
+      <h2>Parameters</h2>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>to</code></td><td><code>string</code></td><td>Recipient Stellar address (G-address)</td></tr>
+          <tr><td><code>amount</code></td><td><code>bigint</code></td><td>Amount in stroops. Must be positive and ≤ balance.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Throws</h2>
+      <table>
+        <thead><tr><th>Error</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><code>"amount must be positive"</code></td><td><code>amount &lt;= 0n</code></td></tr>
+          <tr><td><code>"insufficient balance"</code></td><td><code>amount &gt; local balance</code></td></tr>
+          <tr><td><code>"no on-chain account — deposit first"</code></td><td>Sender has no on-chain commitment</td></tr>
+          <tr><td><code>"Recipient ... has not deposited yet"</code></td><td>Recipient's note pubkey is not on-chain</td></tr>
+          <tr><td>snarkjs error</td><td>Proof generation failed</td></tr>
+          <tr><td>Stellar RPC error</td><td>Transaction rejected</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Duration</h2>
+      <p>Proof generation takes approximately <strong>2–5 seconds</strong> on a modern laptop and up to 10–15 seconds on a low-end mobile device. The Groth16 proof is computed using WebAssembly in the browser — no server is involved.</p>
+
+      <h2>Example</h2>
+      <pre><code class="language-typescript">// Send 2 XLM to a recipient
+await piilo.transfer({
+  to:     'GABC123...',
+  amount: 20_000_000n,
+})
+
+// The recipient must call settleIfPending() to access the funds</code></pre>
+
+      <h2>What the recipient must do</h2>
+      <p>The recipient does not automatically receive funds in their local balance. They must call <a href="settle.html"><codedata-i18n="nav.settle">settleIfPending()</code></a> to decrypt the payment note and merge the commitment into their balance.</p>
+
+      <h2>Privacy properties</h2>
+      <ul>
+        <li><strong>Amount:</strong> hidden. Only the sender and recipient know the amount.</li>
+        <li><strong>Recipient address:</strong> visible on-chain.</li>
+        <li><strong>Sender address:</strong> visible on-chain.</li>
+        <li><strong>Proof:</strong> visible on-chain, but reveals nothing about <code>amount</code>, <code>balance</code>, or blinding factors.</li>
+      </ul>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

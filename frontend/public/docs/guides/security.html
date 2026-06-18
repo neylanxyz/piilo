@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Guide — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="../api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="../api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="../api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="../api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="../api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="../api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="../api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="security.html" class="active"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div>
+        <h1 data-i18n="page.security.h1"data-i18n="nav.security">Security Guide</h1>
+        <p class="page-intro" data-i18n="page.security.intro">The blinding factor <code>r</code> is your private key. This guide covers how to protect it, what to do if it's lost, and how to audit your dependencies.</p>
+      </div>
+
+      <h2>The blinding factor is your private key</h2>
+      <p>The most critical piece of information in Piilo is the blinding factor <code>r</code>. It is the only thing needed to:</p>
+      <ul>
+        <li>Open your on-chain commitment (reveal your balance)</li>
+        <li>Participate in future transfers (generate valid proofs)</li>
+      </ul>
+      <blockquote>
+        <p>If <code>r</code> is <strong>lost</strong> → your XLM is locked (until recovery via event window)<br>
+        If <code>r</code> is <strong>stolen</strong> → your balance is exposed (but XLM remains safe — only you can sign transactions)</p>
+      </blockquote>
+      <p><strong>Treat <code>localStorage</code> backups like seed phrases.</strong></p>
+
+      <h2>Risks by category</h2>
+
+      <h3>Loss of local state</h3>
+      <p><strong>Risk:</strong> <code>localStorage</code> is cleared (browser reset, incognito session, OS reinstall)<br>
+      <strong>Impact:</strong> Cannot generate proofs → cannot withdraw or transfer<br>
+      <strong>Mitigation:</strong> Call <code>exportBackup()</code> after every deposit, transfer, and settle. Store the backup encrypted, off-device.</p>
+
+      <h3>Stolen backup</h3>
+      <p><strong>Risk:</strong> Backup JSON is read by an attacker<br>
+      <strong>Impact:</strong> Attacker learns your plaintext balance and blinding factor<br>
+      <strong>Mitigation:</strong></p>
+      <pre><code class="language-typescript">const backup = await piilo.exportBackup()
+const encrypted = await encryptWithPassword(backup, userPassword)
+// store `encrypted`, not `backup`</code></pre>
+
+      <h3>Compromised browser extension</h3>
+      <p><strong>Risk:</strong> A malicious browser extension reads <code>localStorage</code><br>
+      <strong>Impact:</strong> Attacker learns <code>r</code> and balance<br>
+      <strong>Mitigation:</strong> Use a browser profile dedicated to financial applications; audit installed extensions.</p>
+
+      <h3>Man-in-the-middle on circuit files</h3>
+      <p><strong>Risk:</strong> <code>.zkey</code> or <code>.wasm</code> files are served from a compromised CDN<br>
+      <strong>Impact:</strong> Maliciously modified circuits could allow proof forgery<br>
+      <strong>Mitigation:</strong> Self-host circuit files (see <a href="self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a>); verify file hashes against published checksums; use HTTPS.</p>
+
+      <h3>Stale backup leading to locked funds</h3>
+      <p><strong>Risk:</strong> You restore a backup from before your last <codedata-i18n="nav.settle">settleIfPending()</code><br>
+      <strong>Impact:</strong> <code>importBackup()</code> throws; backup doesn't match on-chain commitment<br>
+      <strong>Mitigation:</strong> Export immediately after every operation, replace old backups.</p>
+
+      <h3>Concurrent sessions on multiple devices</h3>
+      <p><strong>Risk:</strong> Two devices operate simultaneously<br>
+      <strong>Impact:</strong> Only one device's state will be valid; the other is permanently desynchronized<br>
+      <strong>Mitigation:</strong> Never operate from two devices at the same time. Always import an up-to-date backup before using a second device.</p>
+
+      <h2>Recommended backup workflow</h2>
+      <pre><code class="language-typescript">async function safeDeposit(
+  piilo: Piilo,
+  amount: bigint,
+  saveBackup: (json: string) => Promise&lt;void&gt;
+) {
+  await piilo.deposit(amount)
+  const backup = await piilo.exportBackup()
+  await saveBackup(backup)
+}
+
+async function safeTransfer(
+  piilo: Piilo,
+  to: string,
+  amount: bigint,
+  saveBackup: (json: string) => Promise&lt;void&gt;
+) {
+  await piilo.transfer({ to, amount })
+  const backup = await piilo.exportBackup()
+  await saveBackup(backup)
+}
+
+async function safeSettle(
+  piilo: Piilo,
+  saveBackup: (json: string) => Promise&lt;void&gt;
+) {
+  const result = await piilo.settleIfPending()
+  if (result) {
+    const backup = await piilo.exportBackup()
+    await saveBackup(backup)
+  }
+  return result
+}</code></pre>
+
+      <h2>ZK proof security assumptions</h2>
+      <p>Piilo's privacy relies on:</p>
+      <ol>
+        <li><strong>Pedersen commitment hiding:</strong> the discrete log problem on JubJub must be hard</li>
+        <li><strong>Groth16 soundness:</strong> the knowledge-of-exponent assumption must hold for BLS12-381</li>
+        <li><strong>Trusted setup integrity:</strong> at least one participant in the <code>.zkey</code> ceremony must have destroyed their toxic waste</li>
+      </ol>
+
+      <h2>Dependency audit</h2>
+      <p>Before deploying in production, audit:</p>
+      <table>
+        <thead><tr><th>Dependency</th><th>What it does</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td><code>snarkjs</code></td><td>Proof generation</td><td>Malicious version could generate weak proofs</td></tr>
+          <tr><td><code>tweetnacl</code></td><td>Note encryption</td><td>Malicious version could expose note keys</td></tr>
+          <tr><td><code>@stellar/stellar-sdk</code></td><td>Transaction building</td><td>Malicious version could modify transaction content</td></tr>
+        </tbody>
+      </table>
+      <p>Pin dependency versions in <code>package-lock.json</code> and review updates before applying them.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

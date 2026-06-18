@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Self-hosting Circuits — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="../api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="../api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="../api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="../api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="../api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="../api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="../api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="self-hosting.html" class="active"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div>
+        <h1 data-i18n="page.selfhosting.h1">Self-hosting Circuit Files</h1>
+        <p class="page-intro" data-i18n="page.selfhosting.intro">The Piilo SDK uses two large WASM + zkey file pairs for proof generation. By default, the SDK resolves them relative to <code>/circuits/</code> on your web server.</p>
+      </div>
+
+      <h2>Files required</h2>
+      <table>
+        <thead><tr><th>File</th><th>Size</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>transfer_js/transfer.wasm</code></td><td>~2 MB</td><td>Witness generator for transfer circuit</td></tr>
+          <tr><td><code>transfer_1.zkey</code></td><td>~10 MB</td><td>Proving key for transfer circuit</td></tr>
+          <tr><td><code>withdraw_js/withdraw.wasm</code></td><td>~1 MB</td><td>Witness generator for withdraw circuit</td></tr>
+          <tr><td><code>withdraw_1.zkey</code></td><td>~6 MB</td><td>Proving key for withdraw circuit</td></tr>
+        </tbody>
+      </table>
+      <p>All four files are included in the repository at <code>circuits/build/</code>.</p>
+
+      <h2>Serving the files</h2>
+
+      <h3>Vite / React</h3>
+      <pre><code class="language-bash">cp -r circuits/build/transfer_js public/circuits/transfer_js
+cp circuits/build/transfer_1.zkey public/circuits/transfer_1.zkey
+cp -r circuits/build/withdraw_js public/circuits/withdraw_js
+cp circuits/build/withdraw_1.zkey public/circuits/withdraw_1.zkey</code></pre>
+      <p>Vite serves <code>public/</code> at <code>/</code> by default. No additional configuration required.</p>
+
+      <h3>Next.js</h3>
+      <p>Place the files in <code>public/circuits/</code>. Next.js serves <code>public/</code> statically.</p>
+
+      <h3>Nginx</h3>
+      <pre><code class="language-nginx">location /circuits/ {
+  root /var/www/your-app/public;
+  add_header Cache-Control "public, max-age=31536000, immutable";
+  add_header Access-Control-Allow-Origin "*";
+}</code></pre>
+      <p>The files are content-addressed — set long cache TTLs since they never change without a new version.</p>
+
+      <h3>Vercel</h3>
+      <p>The example app is pre-configured for Vercel via <code>vercel.json</code>. The circuit files in <code>examples/confidential-wallet/public/circuits/</code> are deployed automatically.</p>
+
+      <h2>Custom circuit paths</h2>
+      <p>In <code>packages/sdk/src/proof.ts</code>, the <code>assetPath</code> function resolves circuit paths:</p>
+      <pre><code class="language-typescript">function assetPath(rel: string): string {
+  if (typeof window !== 'undefined') return `/circuits/${rel}`
+  const repoRoot = new URL('../../../', import.meta.url)
+  return new URL(`circuits/build/${rel}`, repoRoot).pathname
+}</code></pre>
+      <p>Fork the SDK and modify this function to serve from a CDN:</p>
+      <pre><code class="language-typescript">function assetPath(rel: string): string {
+  if (typeof window !== 'undefined') {
+    return `https://cdn.example.com/piilo-circuits/${rel}`
+  }
+  // ...
+}</code></pre>
+
+      <h2>Verifying file integrity</h2>
+      <pre><code class="language-bash">sha256sum \
+  public/circuits/transfer_1.zkey \
+  public/circuits/withdraw_1.zkey \
+  public/circuits/transfer_js/transfer.wasm \
+  public/circuits/withdraw_js/withdraw.wasm</code></pre>
+      <p>Compare against the checksums in <code>circuits/build/CHECKSUMS.sha256</code> in the repository.</p>
+
+      <h2>Performance considerations</h2>
+      <p>The <code>.zkey</code> files are loaded into memory once per proof generation call. On a cold load:</p>
+      <ul>
+        <li>First call: download + load (~10–16 MB total) + proof generation</li>
+        <li>Subsequent calls: load from browser cache + proof generation</li>
+      </ul>
+      <p><strong>Recommendations:</strong></p>
+      <ul>
+        <li>Preload the <code>.zkey</code> files on application startup (before the user initiates a transfer)</li>
+        <li>Use HTTP/2 for parallel download of both zkey files</li>
+        <li>Set <code>Cache-Control: immutable</code> — the files are versioned and never change</li>
+        <li>Consider a Service Worker to cache the files across sessions</li>
+      </ul>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local State — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="local-state.html" class="active"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="../api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="../api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="../api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="../api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="../api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="../api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="../api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="../guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="../guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="../guides/security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div>
+        <h1 data-i18n="page.localstate.h1"data-i18n="nav.local-state">Local State</h1>
+        <p class="page-intro" data-i18n="page.localstate.intro">Piilo stores your plaintext balance and blinding factor locally — in <code>localStorage</code> in the browser. The Soroban contract stores only commitment points.</p>
+      </div>
+
+      <h2>Why local state is necessary</h2>
+      <p>A Pedersen commitment <code>C = v·G + r·H</code> is a one-way function. Given only <code>C</code> (what's on-chain), you cannot recover <code>v</code> (your balance) or <code>r</code> (the blinding factor) without already knowing at least one of them.</p>
+      <p>The contract holds <code>C</code> — the commitment. You hold <code>v</code> and <code>r</code> — the opening. Both are required to generate transfer proofs, withdrawal proofs, and to know your balance.</p>
+
+      <h2>What is stored locally</h2>
+      <pre><code class="language-typescript">interface LocalState {
+  balance:      bigint    // plaintext balance in stroops
+  r:            bigint    // current blinding factor (field element)
+  pendingNotes: Note[]    // received-but-unsettled transfer notes
+}</code></pre>
+      <p>Stored in <code>localStorage</code> under the key <code>piilo:state:&lt;stellar-address&gt;</code>.</p>
+
+      <h2>When local state is updated</h2>
+      <table>
+        <thead><tr><th>Operation</th><th>State change</th></tr></thead>
+        <tbody>
+          <tr><td><code>deposit(amount)</code></td><td><code>balance += amount</code>, <code>r = (r + r_dep) mod JubJub_H_order</code></td></tr>
+          <tr><td><code>transfer({ to, amount })</code></td><td><code>balance -= amount</code>, <code>r = r_new</code> (fresh random)</td></tr>
+          <tr><td><codedata-i18n="nav.settle">settleIfPending()</code></td><td><code>balance += sum(notes)</code>, <code>r += sum(note.r_A)</code>, <code>pendingNotes = []</code></td></tr>
+          <tr><td><codedata-i18n="nav.withdraw">withdraw()</code></td><td><code>balance = 0</code>, <code>r = 0</code>, <code>pendingNotes = []</code></td></tr>
+          <tr><td><code>importBackup(json)</code></td><td>Overwritten with backup values (verified against chain first)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Blinding factor arithmetic</h2>
+      <p>Blinding factors accumulate mod <code>JUBJUB_H_ORDER</code>:</p>
+      <pre><code class="language-plaintext">JUBJUB_H_ORDER = 26217937587563095239723870254092982918823685063489269125461436649568733016796n</code></pre>
+      <p>This is ~4× smaller than the BLS12-381 field order. Reducing mod this value ensures the accumulated blinding factor always fits in 255 bits, which is required by the circuit's <code>Num2Bits(255)</code> decomposition.</p>
+
+      <h2>Backup and recovery</h2>
+      <p>The local state is not backed up automatically. You must call <code>exportBackup()</code> and store the result securely.</p>
+      <pre><code class="language-typescript">const json = await piilo.exportBackup()
+// {"version":1,"address":"G...","balance":"50000000","r":"1234..."}</code></pre>
+      <blockquote><p><strong>Treat this like a seed phrase.</strong> Anyone who obtains your backup can learn your exact balance and open your commitment. The SDK does not encrypt the backup.</p></blockquote>
+      <p><code>importBackup(json)</code> verifies the backup opens to the current on-chain commitment before writing. If your balance changed since the backup, the import will fail with a mismatch error.</p>
+
+      <h2>Recovery from event window</h2>
+      <p>If you lose your backup, you have a ~7-day window to recover your state from RPC events:</p>
+      <ol>
+        <li>All incoming transfer notes are stored on-chain as encrypted blobs</li>
+        <li>Your note keypair is derived deterministically from your wallet's signing key</li>
+        <li>A recovery scan re-fetches all transfer events directed at your address, decrypts the notes, and reconstructs your pending balance</li>
+      </ol>
+      <p>This only recovers transfers received within the RPC event retention window (~7 days / 100,000 ledgers). Balances older than that without a backup are <strong>irrecoverable</strong>.</p>
+
+      <h2>Multi-device usage</h2>
+      <p>Local state is per-browser. To use Piilo on multiple devices:</p>
+      <ol>
+        <li>Export a backup after every operation on device A</li>
+        <li>Import it on device B before operating</li>
+      </ol>
+      <p>Do not operate from two devices simultaneously — each device tracks its own blinding factor, and concurrent operations will cause them to diverge from the on-chain state.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>

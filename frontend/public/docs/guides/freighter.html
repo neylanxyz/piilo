@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freighter Integration — Piilo Docs</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <link rel="icon" href="/logo.png">
+</head>
+<body>
+<div class="docs-shell">
+  <header class="docs-topbar">
+    <a href="../../landing/index.html" class="docs-topbar-brand">
+      <img src="/logo.png" alt="Piilo"> Piilo
+    </a>
+    <span class="docs-topbar-sep">/</span>
+    <span class="docs-topbar-label">Docs</span>
+    <ul class="docs-topbar-links">
+      <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener" data-i18n="nav.github">GitHub ↗</a></li>
+    </ul>
+  </header>
+  <nav class="docs-sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.start">Getting Started</div>
+      <ul>
+        <li><a href="../introduction.html"data-i18n="nav.introduction">Introduction</a></li>
+        <li><a href="../quickstart.html"data-i18n="nav.quickstart">Quickstart</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.concepts">Concepts</div>
+      <ul>
+        <li><a href="../concepts/architecture.html"data-i18n="nav.architecture">Architecture</a></li>
+        <li><a href="../concepts/privacy-model.html"data-i18n="nav.privacy-model">Privacy Model</a></li>
+        <li><a href="../concepts/local-state.html"data-i18n="nav.local-state">Local State</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.api">API Reference</div>
+      <ul>
+        <li><a href="../api/piilo-class.html"data-i18n="nav.piilo-class">Piilo class</a></li>
+        <li><a href="../api/deposit.html"data-i18n="nav.deposit">deposit()</a></li>
+        <li><a href="../api/transfer.html"data-i18n="nav.transfer">transfer()</a></li>
+        <li><a href="../api/settle.html"data-i18n="nav.settle">settleIfPending()</a></li>
+        <li><a href="../api/withdraw.html"data-i18n="nav.withdraw">withdraw()</a></li>
+        <li><a href="../api/backup.html"data-i18n="nav.backup">exportBackup() / importBackup()</a></li>
+        <li><a href="../api/types.html"data-i18n="nav.types">Types</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label" data-i18n="docs.group.guides">Guides</div>
+      <ul>
+        <li><a href="freighter.html" class="active"data-i18n="nav.freighter">Freighter Integration</a></li>
+        <li><a href="self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a></li>
+        <li><a href="security.html"data-i18n="nav.security">Security Guide</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="docs-content">
+    <article>
+      <div class="page-header">
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div>
+        <h1 data-i18n="page.freighter.h1"data-i18n="nav.freighter">Freighter Integration</h1>
+        <p class="page-intro" data-i18n="page.freighter.intro">Freighter is the most widely used browser wallet for Stellar. This guide provides a complete, production-ready <code>WalletAdapter</code> for Freighter.</p>
+      </div>
+
+      <h2>Install</h2>
+      <pre><code class="language-bash">npm install @stellar/freighter-api</code></pre>
+
+      <h2>Complete adapter</h2>
+      <pre><code class="language-typescript">import {
+  isConnected,
+  getPublicKey,
+  signTransaction,
+  signMessage,
+} from '@stellar/freighter-api'
+import type { WalletAdapter, WalletSigner } from '@piilo/sdk'
+
+export async function createFreighterAdapter(): Promise&lt;WalletAdapter & WalletSigner&gt; {
+  const { isConnected: connected } = await isConnected()
+  if (!connected) {
+    throw new Error('Freighter is not installed. Install it at freighter.app')
+  }
+
+  return {
+    async publicKey() {
+      const { publicKey, error } = await getPublicKey()
+      if (error) throw new Error(error)
+      return publicKey
+    },
+
+    async signTransaction(xdr, opts) {
+      const { signedTransaction, error } = await signTransaction(xdr, {
+        networkPassphrase: opts?.networkPassphrase,
+      })
+      if (error) throw new Error(error)
+      return signedTransaction
+    },
+
+    async signMessage(message) {
+      const { signedMessage, error } = await signMessage(message)
+      if (error) throw new Error(error)
+      // Freighter returns hex; convert to Uint8Array
+      const hex = signedMessage
+      const bytes = new Uint8Array(hex.length / 2)
+      for (let i = 0; i &lt; hex.length; i += 2) {
+        bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16)
+      }
+      return { signature: bytes }
+    },
+  }
+}</code></pre>
+
+      <h2>Usage</h2>
+      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+import { createFreighterAdapter } from './freighterAdapter'
+
+async function initPiilo() {
+  const wallet = await createFreighterAdapter()
+
+  const piilo = new Piilo({
+    network:    'testnet',
+    contractId: 'C...',
+    wallet,
+  })
+
+  return piilo
+}</code></pre>
+
+      <h2>React hook example</h2>
+      <pre><code class="language-tsx">import { useState, useCallback } from 'react'
+import { Piilo } from '@piilo/sdk'
+import { createFreighterAdapter } from './freighterAdapter'
+
+export function usePiilo(contractId: string) {
+  const [piilo, setPiilo] = useState&lt;Piilo | null&gt;(null)
+  const [connecting, setConnecting] = useState(false)
+
+  const connect = useCallback(async () => {
+    setConnecting(true)
+    try {
+      const wallet = await createFreighterAdapter()
+      setPiilo(new Piilo({ network: 'testnet', contractId, wallet }))
+    } finally {
+      setConnecting(false)
+    }
+  }, [contractId])
+
+  return { piilo, connect, connecting }
+}</code></pre>
+
+      <h2>Network detection</h2>
+      <pre><code class="language-typescript">import { getNetworkDetails } from '@stellar/freighter-api'
+
+async function detectNetwork(): Promise&lt;'testnet' | 'mainnet'&gt; {
+  const { networkPassphrase } = await getNetworkDetails()
+  if (networkPassphrase === 'Test SDF Network ; September 2015') return 'testnet'
+  if (networkPassphrase === 'Public Global Stellar Network ; September 2015') return 'mainnet'
+  throw new Error(`Unknown network: ${networkPassphrase}`)
+}</code></pre>
+
+      <h2>Troubleshooting</h2>
+      <h3>"signMessage is not a function"</h3>
+      <p>Your version of <code>@stellar/freighter-api</code> may be outdated:</p>
+      <pre><code class="language-bash">npm install @stellar/freighter-api@latest</code></pre>
+
+      <h3>User sees repeated signing prompts</h3>
+      <p>The <code>NoteKeypair</code> is cached in memory on the <code>Piilo</code> instance. Create one <code>Piilo</code> instance per session and reuse it. Do not create a new <code>Piilo</code> on every operation.</p>
+
+      <h3>"account not found"</h3>
+      <p>The user's Stellar account may not be funded. Direct them to the <a href="https://lab.stellar.org" target="_blank" rel="noopener">Stellar Laboratory</a> to fund their testnet account.</p>
+    </article>
+  </main>
+</div>
+<script src="/i18n.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll()</script>
+</body>
+</html>
