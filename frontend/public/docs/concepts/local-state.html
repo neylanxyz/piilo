@@ -59,12 +59,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div>
-        <h1 data-i18n="page.localstate.h1"data-i18n="nav.local-state">Local State</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div><h1 data-i18n="page.localstate.h1"data-i18n="nav.local-state">Local State</h1>
         <p class="page-intro" data-i18n="page.localstate.intro">Piilo stores your plaintext balance and blinding factor locally — in <code>localStorage</code> in the browser. The Soroban contract stores only commitment points.</p>
       </div>
 
-      <h2>Why local state is necessary</h2>
+      <div data-i18n="body.local-state">
+<h2>Why local state is necessary</h2>
       <p>A Pedersen commitment <code>C = v·G + r·H</code> is a one-way function. Given only <code>C</code> (what's on-chain), you cannot recover <code>v</code> (your balance) or <code>r</code> (the blinding factor) without already knowing at least one of them.</p>
       <p>The contract holds <code>C</code> — the commitment. You hold <code>v</code> and <code>r</code> — the opening. Both are required to generate transfer proofs, withdrawal proofs, and to know your balance.</p>
 
@@ -116,6 +116,8 @@
         <li>Import it on device B before operating</li>
       </ol>
       <p>Do not operate from two devices simultaneously — each device tracks its own blinding factor, and concurrent operations will cause them to diverge from the on-chain state.</p>
+      </div>
+
     </article>
   </main>
 </div>

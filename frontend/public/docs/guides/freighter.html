@@ -59,12 +59,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div>
-        <h1 data-i18n="page.freighter.h1"data-i18n="nav.freighter">Freighter Integration</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div><h1 data-i18n="page.freighter.h1"data-i18n="nav.freighter">Freighter Integration</h1>
         <p class="page-intro" data-i18n="page.freighter.intro">Freighter is the most widely used browser wallet for Stellar. This guide provides a complete, production-ready <code>WalletAdapter</code> for Freighter.</p>
       </div>
 
-      <h2>Install</h2>
+      <div data-i18n="body.freighter">
+<h2>Install</h2>
       <pre><code class="language-bash">npm install @stellar/freighter-api</code></pre>
 
       <h2>Complete adapter</h2>
@@ -169,6 +169,8 @@ async function detectNetwork(): Promise&lt;'testnet' | 'mainnet'&gt; {
 
       <h3>"account not found"</h3>
       <p>The user's Stellar account may not be funded. Direct them to the <a href="https://lab.stellar.org" target="_blank" rel="noopener">Stellar Laboratory</a> to fund their testnet account.</p>
+      </div>
+
     </article>
   </main>
 </div>

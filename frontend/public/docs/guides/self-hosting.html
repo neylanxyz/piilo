@@ -59,12 +59,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div>
-        <h1 data-i18n="page.selfhosting.h1">Self-hosting Circuit Files</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div><h1 data-i18n="page.selfhosting.h1">Self-hosting Circuit Files</h1>
         <p class="page-intro" data-i18n="page.selfhosting.intro">The Piilo SDK uses two large WASM + zkey file pairs for proof generation. By default, the SDK resolves them relative to <code>/circuits/</code> on your web server.</p>
       </div>
 
-      <h2>Files required</h2>
+      <div data-i18n="body.selfhosting">
+<h2>Files required</h2>
       <table>
         <thead><tr><th>File</th><th>Size</th><th>Purpose</th></tr></thead>
         <tbody>
@@ -135,6 +135,8 @@ cp circuits/build/withdraw_1.zkey public/circuits/withdraw_1.zkey</code></pre>
         <li>Set <code>Cache-Control: immutable</code> — the files are versioned and never change</li>
         <li>Consider a Service Worker to cache the files across sessions</li>
       </ul>
+      </div>
+
     </article>
   </main>
 </div>

@@ -59,12 +59,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
-        <h1 data-i18n="page.piiloclass.h1"data-i18n="nav.piilo-class">Piilo class</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div><h1 data-i18n="page.piiloclass.h1"data-i18n="nav.piilo-class">Piilo class</h1>
         <p class="page-intro" data-i18n="page.piiloclass.intro">The main entry point of the SDK. Coordinates local state, proof generation, note encryption, and Stellar transaction submission.</p>
       </div>
 
-      <h2>Import</h2>
+      <div data-i18n="body.piilo-class">
+<h2>Import</h2>
       <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
 import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'</code></pre>
 
@@ -151,6 +151,8 @@ console.log(`${balance / 10_000_000n} XLM`)</code></pre>
       <div class="method-sig">async importBackup(json: string): Promise&lt;&#123; balance: bigint &#125;&gt;</div>
       <p>Restores local state from a backup JSON string. Verifies the backup matches the current on-chain commitment before writing.</p>
       <p><a href="backup.html">→ Full backup docs</a></p>
+      </div>
+
     </article>
   </main>
 </div>

@@ -59,11 +59,11 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
-        <h1data-i18n="nav.transfer">transfer()</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div><h1data-i18n="nav.transfer">transfer()</h1>
       </div>
 
-      <div class="method-sig">async transfer(params: &#123; to: string; amount: bigint &#125;): Promise&lt;void&gt;</div>
+      <div data-i18n="body.transfer">
+<div class="method-sig">async transfer(params: &#123; to: string; amount: bigint &#125;): Promise&lt;void&gt;</div>
 
       <p>Sends <code>amount</code> stroops privately to <code>to</code>. The amount is never revealed on-chain — only a ZK proof attesting to its validity.</p>
 
@@ -123,6 +123,8 @@ await piilo.transfer({
         <li><strong>Sender address:</strong> visible on-chain.</li>
         <li><strong>Proof:</strong> visible on-chain, but reveals nothing about <code>amount</code>, <code>balance</code>, or blinding factors.</li>
       </ul>
+      </div>
+
     </article>
   </main>
 </div>

@@ -59,11 +59,11 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
-        <h1data-i18n="nav.backup">exportBackup() / importBackup()</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div><h1data-i18n="nav.backup">exportBackup() / importBackup()</h1>
       </div>
 
-      <h2>exportBackup()</h2>
+      <div data-i18n="body.backup">
+<h2>exportBackup()</h2>
       <div class="method-sig">async exportBackup(): Promise&lt;string&gt;</div>
       <p>Exports the current local state as a JSON string.</p>
       <pre><code class="language-typescript">const json = await piilo.exportBackup()
@@ -129,6 +129,8 @@ console.log(`Restored balance: ${balance / 10_000_000n} XLM`)</code></pre>
       <h3>Stale backups</h3>
       <p>If you made operations after exporting the backup, the backup will not match the current on-chain commitment and import will fail. You need the most recent backup.</p>
       <p>If you have no recent backup and no recovery path, see <a href="../concepts/local-state.html#recovery-from-event-window">Local State — Recovery from event window</a>.</p>
+      </div>
+
     </article>
   </main>
 </div>

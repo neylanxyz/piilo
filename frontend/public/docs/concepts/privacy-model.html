@@ -59,12 +59,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div>
-        <h1 data-i18n="page.privacy.h1"data-i18n="nav.privacy-model">Privacy Model</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div><h1 data-i18n="page.privacy.h1"data-i18n="nav.privacy-model">Privacy Model</h1>
         <p class="page-intro" data-i18n="page.privacy.intro">Piilo provides <strong>amount privacy</strong> for transfers on Stellar. This document defines exactly what is hidden, what is visible, and the threat model.</p>
       </div>
 
-      <h2>What is hidden</h2>
+      <div data-i18n="body.privacy-model">
+<h2>What is hidden</h2>
       <table>
         <thead><tr><th>Information</th><th>Hidden from whom</th></tr></thead>
         <tbody>
@@ -119,6 +119,8 @@
         <p><strong>Confidential transfers on Stellar</strong> — the amounts of individual transfers and current balances are hidden, but the graph of who sends to whom is not.</p>
       </blockquote>
       <p>If you need sender/recipient anonymity in addition to amount privacy, Piilo alone is not sufficient.</p>
+      </div>
+
     </article>
   </main>
 </div>
