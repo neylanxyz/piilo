@@ -26,6 +26,9 @@ examples/*/dist/
 .env.local
 *.env
 
+# Claude Code
+CLAUDE.md
+
 # Editor
 .vscode/
 .idea/
