@@ -9,7 +9,7 @@ mod test;
 use commitment::Point;
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype, token, Address, Bytes,
-    Env, Vec, U256,
+    BytesN, Env, Vec, U256,
 };
 use verifier::{Proof, VerificationKey, VerifierClient};
 
@@ -23,6 +23,7 @@ pub enum DataKey {
     WithdrawVk,
     NativeToken,
     VaultBalance,
+    AuditorKey,
     Account(Address),
     NotePubkey(Address),
     PendingNotes(Address),
@@ -66,6 +67,13 @@ pub struct TransferEvent {
     pub from: Address,
     pub to: Address,
     pub encrypted_note: Bytes,
+    /// Ephemeral JubJub public key R_e = r_e * H. Auditor ECDH: k_aud * R_e
+    /// gives the same shared secret the prover used, letting the auditor
+    /// recover A = a_enc_field - S.x (mod Fr).
+    pub r_e: Point,
+    /// A_enc = A + (r_e * K_aud).x — encrypted transfer amount, readable
+    /// only by whoever holds the auditor private key k_aud.
+    pub a_enc: BytesN<32>,
 }
 
 #[contractevent(topics = ["settle"])]
@@ -158,6 +166,7 @@ impl Piilo {
         transfer_vk: VerificationKey,
         withdraw_vk: VerificationKey,
         native_token: Address,
+        auditor_key: Point,
     ) {
         env.storage().instance().set(&DataKey::G, &g);
         env.storage().instance().set(&DataKey::H, &h);
@@ -168,6 +177,7 @@ impl Piilo {
             .instance()
             .set(&DataKey::NativeToken, &native_token);
         env.storage().instance().set(&DataKey::VaultBalance, &0i128);
+        env.storage().instance().set(&DataKey::AuditorKey, &auditor_key);
     }
 
     /// User sends `amount` of the native asset into the vault and supplies
@@ -176,7 +186,7 @@ impl Piilo {
     /// the contract computes C = amount*G + r*H itself, so there's nothing
     /// to verify it against (a redundant "verify the user's own commitment"
     /// step would just be extra surface for a bad replicated computation).
-    pub fn deposit(env: Env, user: Address, amount: i128, blinding: soroban_sdk::BytesN<32>, note_pubkey: soroban_sdk::BytesN<32>) -> Result<(), PiiloError> {
+    pub fn deposit(env: Env, user: Address, amount: i128, blinding: BytesN<32>, note_pubkey: BytesN<32>) -> Result<(), PiiloError> {
         user.require_auth();
         if amount <= 0 {
             return Err(PiiloError::InvalidAmount);
@@ -215,10 +225,16 @@ impl Piilo {
     /// Moves a hidden amount from sender to recipient. `c_a` is the amount
     /// commitment (added to recipient.pending_commitment); `c_new` is the
     /// sender's post-transfer balance commitment. `proof` attests, without
-    /// revealing the amount, that sender owned >= the transferred amount
-    /// and that c_new opens to (old_balance - amount). `encrypted_note`
-    /// carries (amount, r_A) encrypted for the recipient — it's only
-    /// relayed as event data; the contract never reads it.
+    /// revealing the amount, that sender owned >= the transferred amount,
+    /// that c_new opens to (old_balance - amount), and that `r_e`/`a_enc`
+    /// are correctly formed for the registered auditor key. `encrypted_note`
+    /// carries (amount, r_A) encrypted for the recipient.
+    ///
+    /// `r_e` is the ephemeral JubJub public key; `a_enc` is the transfer
+    /// amount encrypted for the auditor (A + S.x in Fr, where S = r_e * K_aud
+    /// in-circuit). Both are emitted as event data so the auditor can scan
+    /// and decrypt offline — the contract never reads them beyond forwarding
+    /// them into the proof's public inputs.
     pub fn transfer(
         env: Env,
         sender: Address,
@@ -227,14 +243,22 @@ impl Piilo {
         c_new: Point,
         proof: Proof,
         encrypted_note: Bytes,
+        r_e: Point,
+        a_enc: BytesN<32>,
     ) -> Result<(), PiiloError> {
         sender.require_auth();
 
         let mut sender_account = load_account(&env, &sender)?;
 
+        let auditor_key: Point = env.storage().instance().get(&DataKey::AuditorKey).unwrap();
+        let a_enc_fr = soroban_sdk::crypto::bls12_381::Fr::from_bytes(a_enc.clone());
         let verifier_addr: Address = env.storage().instance().get(&DataKey::Verifier).unwrap();
         let vk: VerificationKey = env.storage().instance().get(&DataKey::TransferVk).unwrap();
-        let inputs = points_to_inputs(&env, &[&sender_account.balance_commitment, &c_a, &c_new]);
+        let mut inputs = points_to_inputs(
+            &env,
+            &[&sender_account.balance_commitment, &c_a, &c_new, &auditor_key, &r_e],
+        );
+        inputs.push_back(a_enc_fr.to_u256());
         verify(&env, &verifier_addr, &vk, &proof, &inputs)?;
 
         sender_account.balance_commitment = c_new;
@@ -264,6 +288,8 @@ impl Piilo {
             from: sender,
             to: recipient,
             encrypted_note,
+            r_e,
+            a_enc,
         }
         .publish(&env);
         Ok(())
@@ -333,7 +359,11 @@ impl Piilo {
         env.storage().persistent().get(&DataKey::Account(user))
     }
 
-    pub fn get_note_pubkey(env: Env, user: Address) -> Option<soroban_sdk::BytesN<32>> {
+    pub fn get_auditor_key(env: Env) -> Point {
+        env.storage().instance().get(&DataKey::AuditorKey).unwrap()
+    }
+
+    pub fn get_note_pubkey(env: Env, user: Address) -> Option<BytesN<32>> {
         env.storage().persistent().get(&DataKey::NotePubkey(user))
     }
 

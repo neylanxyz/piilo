@@ -332,6 +332,35 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "AuditorKey"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "map": [
+                          {
+                            "key": {
+                              "symbol": "x"
+                            },
+                            "val": {
+                              "bytes": "2ec96f1858b8ba394325e97263029177901245d2549346f6ee7dfc7ab6e5b061"
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "y"
+                            },
+                            "val": {
+                              "bytes": "3c7fada8b6c7375e4ecb26c1bf4b1a525a4ccf0f8b3e2f7f38350a3b68395aac"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "G"
                           }
                         ]
@@ -447,25 +476,40 @@
                             "val": {
                               "vec": [
                                 {
-                                  "bytes": "0cd85a5c89f66d957f16b6436d794b59168616ab91a96b7c1ce5f484c4a6e558501b0f7eaf6e48681db157cfdd46f96f16fa473829c86885c3ce27a6fa323cd9907d1831bc67967397f8afe0b5d748189e1dc940cfd3cbe70f085b3cbb956ad5"
+                                  "bytes": "09b49a0315f45edc99571cc6f465cf708588a388e1fad8c2194108b465c2aa1a1cae937b6be39993614a4557f8e615001604aca11a7a0c835ab11f6ad3cd7776e46f9ec3d5db7393636ab52598f9ca2ecb53559bcb5b4ff62566245c101b8fa5"
                                 },
                                 {
-                                  "bytes": "125045f0e8da497883b72d7cf7a109a569793d959870a54cbe1fdeed989606c72f77b91b5a6efc5c2188c49c94246f400b78828f0cc42e888052b7d776e21b293dd1556e91f54c741e72b3d574731a57ea167ab3b6bab5b9384ad080574a844b"
+                                  "bytes": "07b16349503a7f666eb00e1e036bfcc13a6af69171d829d6529882fc1a7f32c5445b9f07cc8014bb40c8de12f235bddd1872f1fa7426c1603bcaabd7623a27943fff4dfbf1dec42982b2bf5d58978a1374db7506cdf8bd3af993565a982defe0"
                                 },
                                 {
-                                  "bytes": "063873cb0bbf4020fdc24db08ac8a1a47027ae76d0094f63d1891a9067bb8676e237722936efa905ce5282e31002add40842185056454a140801e06a21044e70d4177695057d7ba408aa112d1a41c1d5a88a8d8b01b42a69840a9e3812cafb47"
+                                  "bytes": "0b3f7cdc9703f7fb96264dcb2bd742375932a1fbef03231a53afb2e5fc5a4f5d5ab710388b6870ac7f6fccc6fa871bbd18135d6e1f4476714e1f5ca0d76a53afeefc575ee8a62098fa787b447bfd4358a5c7350dba09ad4a19bc66e883e63154"
                                 },
                                 {
-                                  "bytes": "111b8aaa542c39085870ce915989c7ef3c44ae681521f90d0d8d2009815ec8a248b738fc58bc7a321b444a12f99b63bd0f390ed19db11cce5dcc4438de3817d77c99155105eb48ecc9d49ec664be917a26335618d4b89fee39d9409a4e7ff8c3"
+                                  "bytes": "07fae7b9f430f59403f1aafc9b0ea6f7ebfbfe82bf33e89f22e2443ec585b5a08cc6bca2a128995c6c9821e732cd0a8302c4c44358f9a87e97633f8fddc7ff0d3b26260ebbe3589855ba9ec08ab31cf3d0c620ead3856008f7157b4ee6f66f18"
                                 },
                                 {
-                                  "bytes": "0bc44c2b096579fcdf096b694c53c33131a9249d6b97a8db26db328a8d58801c3f3185e078dc5462b2c5d0389e4117730aa8d01379f33f3ba411892441ee61417305ac8cc2756c24354107eff3ed902f30f5833cb61b6bcee2cc46ad193e38e5"
+                                  "bytes": "199d909c0fe00eb947e0266fc6c84f0f8d3555517999512c96acca2a8cf874975c88f834937aa4ad4402dfe8c47c211711c065f0d3aa82a646afdea57e33f83f49ce7d84f7b312b75e17259302c0a3fce22a49ff867892d32df3dd40d065cfe3"
                                 },
                                 {
-                                  "bytes": "0b2d2d7c3237e0a5bebcd72c5442fcca63fe6eb74252db5f6828ef9a4912300e845c0b06327d75d9e786d6f86274cce6034026dce6c0f7c33ffef3b632452c3f3c794c7a402bd53c93ea1e31b4608437bed95d1abaf4760c469f1b619baf4445"
+                                  "bytes": "197e82a12a59ecd16399c51a20711359e8caf2a27da92bfaa200679a4072a8a3301c3ac727635b013d1bf543b04545d51111b51145e43815395656e02279eb0e2a900653bb9f6080f90d52c34049cf82a7f4ea714a8c9e1ef7b4f7c5f0560662"
                                 },
                                 {
-                                  "bytes": "092dcbdf12ebacad26a6f867d8781feac3c838bcb326b575841a4b5818ccf176cfc193289826834541faf470495b13c00dfd01fc0d032d9fc40ccb22dc75c855969b723d9723c31b7ee076e700dffcaf0cdd8c42d144c0eb3b28c9d99468b562"
+                                  "bytes": "0c9b3f69e27f5e4217f13718974f495ca389776ebdc1cbc0a47b0e0706297299488d365c629cbc3dc1e515cd5dee0421106a931c047ab9d4471dd9ab737645fd6ba319bfb0ef03d740fafa97fba848d32ed5b46e143012a6533e360268c51d3c"
+                                },
+                                {
+                                  "bytes": "0717ef1cf9153b19b6cc9a6d85619acc0e37d0718030b8e9553c7ef8e73369e2061f146b11218593e38a170e9ae1e3a2155280b36b9da3cb18cafcbadcd25617918962129a5a36583b30df6c0424d8cf59599aec23571678f08ab2366091f8b4"
+                                },
+                                {
+                                  "bytes": "0de130d7871f5992bae0a2ab771da7ee6e75a87ea730d86483dd06381c96a6de8b8c88efc4b12db5f0b4f1d0fba3e6c506010cec402038c8bb673c1bda81287e9cd45197c773844dd9ec26ddcddf2bd7836fc9689ad696c36f38e83ac5193b7c"
+                                },
+                                {
+                                  "bytes": "02fe62475daf5ebd039a7c065dffd20f277d500baff93cd755cc59a96a7cbd69946aa59762ebbd5dfd46b7fcfcb212430ea72e01cfee04a898696059e075d5f7b5b631fde64fa67f6b9dae6e76c12f4751bd878481b070dfa377e800a1ce2202"
+                                },
+                                {
+                                  "bytes": "0def5ba9a93c8d7539d0a12258b4b90d04ff1e7a3f2b5340c936e1ce5be57a1cc36e05c7a4ad674e6396370a926e51bb03ca1d84cd148767f9ec5acb838aec6476a6370c69cc3a8fa0f3f390cb8b3bbfda9e3b430b058a52357b74d1d0f76d58"
+                                },
+                                {
+                                  "bytes": "03b4782e45252ab99ca1b434a91c01d4681aa49af107bd2ade0d06b847a926307dd6539da5658938e72e2a8982bfeb9c175b732720704a295da3f15037ccb2e34da37fc4d14bf585cbf5dd60ecd6c58071acd1155f39c30b338b7f71856e3c05"
                                 }
                               ]
                             }

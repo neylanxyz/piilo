@@ -137,6 +137,21 @@ template EdwardsMulScalar(n) {
     yout <== accY[n];
 }
 
+// Checks that (x, y) lies on the JubJub curve: -x^2 + y^2 = 1 + d*x^2*y^2.
+// Used to validate auditor public keys supplied as public inputs — the
+// verifier contract doesn't check curve membership on its own, so an
+// off-curve K_aud would silently break the ECDH soundness (the shared
+// secret would not correspond to the auditor's private key).
+template IsOnJubJub() {
+    signal input x;
+    signal input y;
+    signal x2 <== x * x;
+    signal y2 <== y * y;
+    signal x2y2 <== x2 * y2;
+    var d = 19257038036680949359750312669786877991949435402254120286184196891950884077233;
+    y2 - x2 - 1 - d * x2y2 === 0;
+}
+
 // C = value*G + blinding*H. `value` is range-checked to n bits by the
 // caller's own Num2Bits (transfer/withdraw circuits need that check
 // anyway, for the no-overdraft relation) — PedersenCommit just consumes
