@@ -9,14 +9,21 @@ import * as snarkjs from "snarkjs";
 export type JubJubPoint = [string, string];
 
 export interface TransferInput {
+  // Private witnesses
   B: bigint;        // sender's plaintext balance
   r_B: bigint;      // sender's balance blinding factor
   A: bigint;        // transfer amount
   r_A: bigint;      // amount blinding factor
   r_new: bigint;    // new balance blinding factor (chosen fresh by sender)
-  C_B: JubJubPoint; // current on-chain balance commitment
-  C_A: JubJubPoint; // amount commitment (to be stored on-chain)
-  C_new: JubJubPoint; // new sender balance commitment
+  r_e: bigint;      // ephemeral ECDH scalar — must be non-zero (A0 constraint)
+  // Public inputs — balance/amount (unchanged)
+  C_B: JubJubPoint;
+  C_A: JubJubPoint;
+  C_new: JubJubPoint;
+  // Public inputs — auditor ECDH
+  K_aud: JubJubPoint; // auditor's JubJub public key (from contract)
+  R_e: JubJubPoint;   // ephemeral public key = r_e * H (pre-computed by caller)
+  A_enc: bigint;      // encrypted amount = A + (r_e * K_aud).x mod q
 }
 
 export interface WithdrawInput {
@@ -59,9 +66,13 @@ export async function proveTransfer(input: TransferInput): Promise<GrothProof> {
     A: bigintToField(input.A),
     r_A: bigintToField(input.r_A),
     r_new: bigintToField(input.r_new),
+    r_e: bigintToField(input.r_e),
     C_B: pointToFields(input.C_B),
     C_A: pointToFields(input.C_A),
     C_new: pointToFields(input.C_new),
+    K_aud: pointToFields(input.K_aud),
+    R_e: pointToFields(input.R_e),
+    A_enc: bigintToField(input.A_enc),
   };
 
   const { proof } = await snarkjs.groth16.fullProve(

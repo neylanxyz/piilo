@@ -88,6 +88,12 @@ function encodeBlinding(r: bigint): xdr.ScVal {
   return toScvBytes(hexToBytes(r.toString(16).padStart(64, "0")));
 }
 
+// Encode an Fr field element (bigint) as 32 big-endian bytes — used for
+// a_enc (the auditor-encrypted amount, A + S.x mod q).
+function encodeFrBytes(v: bigint): xdr.ScVal {
+  return toScvBytes(hexToBytes(v.toString(16).padStart(64, "0")));
+}
+
 // ── Transaction lifecycle ────────────────────────────────────────────────────
 
 export class PiiloStellar {
@@ -169,7 +175,9 @@ export class PiiloStellar {
     c_a: JubJubPoint,
     c_new: JubJubPoint,
     proof: GrothProof,
-    encryptedNote: Uint8Array
+    encryptedNote: Uint8Array,
+    r_e: JubJubPoint,
+    a_enc: bigint
   ): Promise<void> {
     const sender = await wallet.publicKey();
     await this.buildAndSend(wallet, "transfer", [
@@ -179,6 +187,8 @@ export class PiiloStellar {
       encodePoint(c_new),
       encodeProof(proof),
       toScvBytes(encryptedNote),
+      encodePoint(r_e),
+      encodeFrBytes(a_enc),
     ]);
   }
 
@@ -203,6 +213,37 @@ export class PiiloStellar {
   }
 
   // ── Read-only calls ────────────────────────────────────────────────────────
+
+  async getAuditorKey(): Promise<JubJubPoint> {
+    const dummyKeypair = Keypair.random();
+    const dummyAccount = await this.rpc.getAccount(dummyKeypair.publicKey()).catch(() => ({
+      id: dummyKeypair.publicKey(), sequenceNumber: () => "0",
+      incrementSequenceNumber: () => {}, accountId: () => dummyKeypair.publicKey(),
+      sequence: "0", subentryCount: 0, inflationDest: null, homeDomain: "",
+      thresholds: { lowThreshold: 0, medThreshold: 0, highThreshold: 0 },
+      flags: { authRequired: false, authRevocable: false, authImmutable: false },
+      balances: [], signers: [], data: {},
+    } as never));
+
+    const tx = new TransactionBuilder(dummyAccount as never, {
+      fee: "100", networkPassphrase: this.networkPassphrase(),
+    })
+      .addOperation(this.contract.call("get_auditor_key"))
+      .setTimeout(5)
+      .build();
+
+    const sim = await this.rpc.simulateTransaction(tx);
+    if (rpc.Api.isSimulationError(sim) || !sim.result)
+      throw new Error("get_auditor_key simulation failed");
+
+    const val = scValToNative(sim.result.retval) as { x: Uint8Array; y: Uint8Array };
+    const bytesToDec = (b: Uint8Array): string => {
+      let hex = "";
+      for (const byte of b) hex += byte.toString(16).padStart(2, "0");
+      return BigInt("0x" + hex).toString();
+    };
+    return [bytesToDec(val.x), bytesToDec(val.y)];
+  }
 
   async getAccount(address: string): Promise<{
     balance_commitment: JubJubPoint;

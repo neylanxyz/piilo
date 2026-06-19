@@ -123,20 +123,15 @@ export class Piilo {
     const r_A = randomFr();
     const r_new = randomFr();
 
-    // Compute C_A and C_new locally using the same commitment arithmetic the
-    // circuit uses. We don't have on-chain computation here — the proof itself
-    // attests that these are correctly formed.
-    // In a real implementation, use a local JubJub scalar_mul (same as the
-    // Rust commitment.rs). For now: the circuit witness generator computes
-    // them; we read them back from the proof's public signals.
-    const { proof, C_A, C_new } = await this.proveTransferAndExtractCommitments(
-      state.balance,
-      state.r,
-      amount,
-      r_A,
-      r_new,
-      C_B
-    );
+    const { proof, C_A, C_new, R_e, a_enc } =
+      await this.proveTransferAndExtractCommitments(
+        state.balance,
+        state.r,
+        amount,
+        r_A,
+        r_new,
+        C_B
+      );
 
     // Encrypt the note for the recipient.
     const noteKeypair = await this.getNoteKeypair();
@@ -151,7 +146,9 @@ export class Piilo {
       C_A,
       C_new,
       proof,
-      encryptedNote
+      encryptedNote,
+      R_e,
+      a_enc
     );
 
     saveState(address, applySend(state, amount, r_new));
@@ -260,14 +257,32 @@ export class Piilo {
     r_A: bigint,
     r_new: bigint,
     C_B: JubJubPoint
-  ): Promise<{ proof: import("./proof.js").GrothProof; C_A: JubJubPoint; C_new: JubJubPoint }> {
-    // We need C_A and C_new before we can call the circuit — but the circuit
-    // computes them internally from (A, r_A) and (B-A, r_new). To get C_A and
-    // C_new we use a local JubJub implementation (or run the circuit twice).
-    //
-    // Short-cut: run the fullProve call which returns both proof and public
-    // signals. The public signals are [C_B[0], C_B[1], C_A[0], C_A[1],
-    // C_new[0], C_new[1]] — we extract C_A and C_new from there.
+  ): Promise<{
+    proof: import("./proof.js").GrothProof;
+    C_A: JubJubPoint;
+    C_new: JubJubPoint;
+    R_e: JubJubPoint;
+    a_enc: bigint;
+  }> {
+    // Fetch the auditor public key from the contract (one RPC sim call).
+    const K_aud = await this.stellar.getAuditorKey();
+
+    // Generate a fresh non-zero ephemeral scalar. The circuit's A0 constraint
+    // rejects r_e = 0 because it collapses S to the identity and leaks A.
+    let r_e = 0n;
+    while (r_e === 0n) r_e = randomFr();
+
+    // Pre-compute auditor ECDH values locally — the circuit constrains these
+    // to match what's derived from r_e, so the prover must supply them.
+    const hPt: [bigint, bigint] = [BigInt(H[0]), BigInt(H[1])];
+    const kPt: [bigint, bigint] = [BigInt(K_aud[0]), BigInt(K_aud[1])];
+
+    const [re_x, re_y] = scalarMul(r_e, hPt);         // R_e = r_e * H
+    const [s_x]        = scalarMul(r_e, kPt);          // S   = r_e * K_aud
+    const a_enc        = modFr(A + s_x);               // A_enc = A + S.x mod q
+
+    const R_e: JubJubPoint  = [re_x.toString(), re_y.toString()];
+
     const { groth16 } = await import("snarkjs");
     const snarkInput = {
       B: B.toString(),
@@ -275,17 +290,13 @@ export class Piilo {
       A: A.toString(),
       r_A: r_A.toString(),
       r_new: r_new.toString(),
-      // Circuit computes C_B internally and constrains it == C_B public input.
-      // We pass the on-chain C_B as the public input.
+      r_e: r_e.toString(),
       C_B: [C_B[0], C_B[1]],
-      // C_A and C_new: the circuit computes these and constrains them to the
-      // public inputs. We pass 0 as placeholders — the witness generator
-      // will compute the correct values and the prover will use those.
-      // Actually in Circom, public inputs ARE inputs — the witness generator
-      // needs the real values. So we need to pre-compute C_A and C_new.
-      // Use the JubJub local helper for this.
       C_A: await localCommit(A, r_A),
       C_new: await localCommit(B - A, r_new),
+      K_aud: [K_aud[0], K_aud[1]],
+      R_e: [R_e[0], R_e[1]],
+      A_enc: a_enc.toString(),
     };
 
     const wasmPath = assetPath("transfer_js/transfer.wasm");
@@ -296,9 +307,11 @@ export class Piilo {
       zkeyPath
     );
 
-    // publicSignals: [C_B[0], C_B[1], C_A[0], C_A[1], C_new[0], C_new[1]]
-    const C_A: JubJubPoint = [publicSignals[2], publicSignals[3]];
-    const C_new: JubJubPoint = [publicSignals[4], publicSignals[5]];
+    // publicSignals order matches `component main {public [C_B, C_A, C_new, K_aud, R_e, A_enc]}`:
+    // [0] C_B.x  [1] C_B.y  [2] C_A.x  [3] C_A.y  [4] C_new.x  [5] C_new.y
+    // [6] K_aud.x [7] K_aud.y [8] R_e.x [9] R_e.y  [10] A_enc
+    const C_A_out: JubJubPoint   = [publicSignals[2], publicSignals[3]];
+    const C_new_out: JubJubPoint = [publicSignals[4], publicSignals[5]];
 
     const proof = {
       pi_a: [rawProof.pi_a[0], rawProof.pi_a[1]] as [string, string],
@@ -309,7 +322,7 @@ export class Piilo {
       pi_c: [rawProof.pi_c[0], rawProof.pi_c[1]] as [string, string],
     };
 
-    return { proof, C_A, C_new };
+    return { proof, C_A: C_A_out, C_new: C_new_out, R_e, a_enc };
   }
 
   // Fetch the note pubkey for a recipient from the contract.
