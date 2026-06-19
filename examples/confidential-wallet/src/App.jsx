@@ -52,9 +52,16 @@ function shortenAddr(addr) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+const MAX_SANE_STROOPS = 500_000_000_000_000_000n; // 50B XLM — total supply
+
 function xlmFmt(stroops) {
   if (stroops == null) return "—";
-  return (Number(stroops) / 1e7).toFixed(7).replace(/\.?0+$/, "") + " XLM";
+  const s = BigInt(stroops);
+  if (s < 0n || s > MAX_SANE_STROOPS) return "? (wrong key)";
+  const whole = s / 10_000_000n;
+  const frac  = s % 10_000_000n;
+  const fracStr = frac.toString().padStart(7, "0").replace(/0+$/, "");
+  return fracStr ? `${whole}.${fracStr} XLM` : `${whole} XLM`;
 }
 
 function commitmentFmt(point) {
@@ -186,7 +193,7 @@ export default function App() {
     try {
       const kAud = BigInt(auditorKey.trim());
       const stellar = new PiiloStellar(CONTRACT_ID, NETWORK);
-      const events = await stellar.getTransferNotes(scanAddress);
+      const events = await stellar.getTransferNotes(scanAddress, true);
       const results = events.map(({ from, r_e, a_enc }) => ({
         from,
         amount: decryptAuditorNote(kAud, r_e, a_enc),

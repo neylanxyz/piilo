@@ -315,17 +315,20 @@ export class PiiloStellar {
     };
   }
 
-  // Returns all transfer events directed to recipientAddress that occurred
-  // after the most recent settle event for that address (so already-counted
-  // notes are excluded). Covers the 7-day RPC retention window.
+  // Returns transfer events directed to recipientAddress in the 7-day window.
+  // By default excludes events already counted by a prior settle (for the
+  // user's own settle flow). Pass allTransfers=true to see every transfer
+  // regardless of settle status (used by the auditor panel).
   async getTransferNotes(
-    recipientAddress: string
+    recipientAddress: string,
+    allTransfers = false
   ): Promise<Array<{ from: string; encryptedNote: Uint8Array; r_e: JubJubPoint; a_enc: bigint }>> {
     const latest = await this.rpc.getLatestLedger();
-    // Use 100_000 ledgers (~5.8 days) instead of 120_960 to stay safely inside
-    // the RPC's actual retention window (exact boundary varies; 120_960 causes
-    // off-by-one failures when latest.sequence - 120_960 < minRetained).
-    const windowStart = Math.max(1, latest.sequence - 100_000);
+    // Testnet RPC retains ~10k ledgers (~14 hrs); mainnet retains ~100k (~5.8
+    // days). Using a larger offset than the RPC minimum causes a silent []
+    // return (not an error), so we must stay within the node's actual window.
+    const eventWindow = this.network === "mainnet" ? 100_000 : 9_500;
+    const windowStart = Math.max(1, latest.sequence - eventWindow);
 
     const transferSym = xdr.ScVal.scvSymbol("transfer").toXDR("base64");
     const settleSym   = xdr.ScVal.scvSymbol("settle").toXDR("base64");
@@ -337,22 +340,25 @@ export class PiiloStellar {
     const addrStr = (v: unknown): string => String(v);
 
     // Find the latest ledger at which this address settled, to avoid
-    // re-counting notes that are already in local balance.
+    // re-counting notes that are already in local balance. Skipped in
+    // allTransfers mode (auditor wants to see settled transfers too).
     let fromLedger = windowStart;
-    try {
-      const settleResp = await this.rpc.getEvents({
-        startLedger: windowStart,
-        filters: [{ type: "contract", contractIds, topics: [[settleSym]] }],
-        limit: 200,
-      });
-      for (const ev of settleResp.events) {
-        const data = scValToNative(ev.value) as { user: unknown };
-        if (addrStr(data.user) === recipientAddress) {
-          fromLedger = Math.max(fromLedger, Number(ev.ledger));
+    if (!allTransfers) {
+      try {
+        const settleResp = await this.rpc.getEvents({
+          startLedger: windowStart,
+          filters: [{ type: "contract", contractIds, topics: [[settleSym]] }],
+          limit: 200,
+        });
+        for (const ev of settleResp.events) {
+          const data = scValToNative(ev.value) as { user: unknown };
+          if (addrStr(data.user) === recipientAddress) {
+            fromLedger = Math.max(fromLedger, Number(ev.ledger));
+          }
         }
+      } catch (e) {
+        console.error("[piilo] settle events query failed:", e);
       }
-    } catch (e) {
-      console.error("[piilo] settle events query failed:", e);
     }
 
     try {

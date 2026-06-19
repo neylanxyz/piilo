@@ -35,19 +35,14 @@ const keypair      = Keypair.fromSecret(workerSecret);
 log(`Deployer: ${keypair.publicKey()}`);
 
 // ── 1. Build ──────────────────────────────────────────────────────────────────
-log("\n── Building contracts ──");
-run("stellar contract build");
-
-// stellar contract build uses wasm32v1-none (not wasm32-unknown-unknown).
-const V_WASM = path.join(ROOT, "target/wasm32v1-none/release/verifier.wasm");
-const P_WASM = path.join(ROOT, "target/wasm32v1-none/release/piilo.wasm");
+// WASMs already built with wasm32v1-none target.
+const V_WASM = path.join(ROOT, "target/wasm32v1-none/release/verifier.optimized.wasm");
+const P_WASM = path.join(ROOT, "target/wasm32v1-none/release/piilo.optimized.wasm");
 
 // ── 2. Deploy verifier ────────────────────────────────────────────────────────
-log("\n── Deploying verifier ──");
-const VERIFIER_ID = run(
-  `stellar contract deploy --optimize --wasm ${V_WASM} --source worker --network testnet`
-).trim();
-log(`Verifier: ${VERIFIER_ID}`);
+// Already deployed — reuse existing instance.
+const VERIFIER_ID = "CAYIBC6P4XUCOJ2JOS6ND56DCHDOFVPZ6LLVAKFAN7Y3UWFNYIDXQZD4";
+log(`Verifier (pre-deployed): ${VERIFIER_ID}`);
 
 // ── 3. XLM SAC ────────────────────────────────────────────────────────────────
 log("\n── Resolving XLM SAC ──");
@@ -61,6 +56,10 @@ const G_X_HEX = "72fd4dce199fea0b4fdbed2812625078624bea8bebf24bde696fc7094e36a80
 const G_Y_HEX = "4fa134fa4674de260a3462d1423d8a5bdf64bede24f7b685a55ab491ccbf02aa";
 const H_X_HEX = "05d6ef7aecc52a4be106063219ec137661d681d1dea14f9a58f2d5b88253c92d";
 const H_Y_HEX = "1b7d08b3eae0e003ce5ff7f1ea0b091ce2952f22c545f2e3df09852d9ece4924";
+// Auditor public key: K_aud = k_aud * H  (k_aud = 12345678901234567890 for testnet)
+// Computed via packages/sdk/dist/jubjub.js scalarMul — verified on-curve.
+const K_AUD_X_HEX = "4268d6b33df2805fb0b95a9b709df8f14ced07dba4d201d9df145295e39c03d0";
+const K_AUD_Y_HEX = "1fa21cc12fb4b166e39b4e698521cc33dd911d8d930bac87aebfe8d00428d778";
 
 // ── 4. Deploy piilo with constructor ─────────────────────────────────────────
 // Upload WASM via CLI (avoids SDK XDR compatibility issues with testnet responses).
@@ -86,6 +85,7 @@ const constructorArgs = [
   encodeVk(readVkJson("transfer")),        // transfer_vk: VerificationKey
   encodeVk(readVkJson("withdraw")),        // withdraw_vk: VerificationKey
   new Address(NATIVE_TOKEN).toScVal(),     // native_token: Address
+  encodePoint(K_AUD_X_HEX, K_AUD_Y_HEX), // auditor_key: Point (k_aud=12345678901234567890)
 ];
 
 await deployWithConstructor(piiloHash, salt, constructorArgs);
