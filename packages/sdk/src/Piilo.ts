@@ -19,22 +19,17 @@ import {
   type WalletSigner, type NoteKeypair,
 } from "./note.js";
 import { PiiloStellar, type Network, type WalletAdapter } from "./stellar.js";
-
-// Fr modulus for BLS12-381 (used to reduce blinding factor additions mod q).
-// Blinding factors are Fr elements; additions must stay in the field.
-const FR_MODULUS =
-  52435875175126190479447740508185965837690552500527637822603658699938581184513n;
+import { FR_Q, G, H, modFr, edwardsAdd, scalarMul } from "./jubjub.js";
 
 function randomFr(): bigint {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  // Reduce mod q to ensure it's a valid Fr element.
   let v = 0n;
   for (const b of bytes) v = (v << 8n) | BigInt(b);
-  return v % FR_MODULUS;
+  return v % FR_Q;
 }
 
 function addFr(a: bigint, b: bigint): bigint {
-  return (a + b) % FR_MODULUS;
+  return (a + b) % FR_Q;
 }
 
 // Commitment point is stored on-chain as (x, y) BytesN<32> big-endian.
@@ -239,7 +234,7 @@ export class Piilo {
     const onChain = await this.stellar.getAccount(address);
     if (!onChain) throw new Error("No on-chain account — deposit first, then restore");
 
-    const [cx, cy] = await localCommit(balance, r);
+    const [cx, cy] = localCommit(balance, r);
     const [onX, onY] = onChain.balance_commitment;
     if (cx !== onX || cy !== onY)
       throw new Error("Backup does not match on-chain commitment — wrong balance or blinding factor");
@@ -292,8 +287,8 @@ export class Piilo {
       r_new: r_new.toString(),
       r_e: r_e.toString(),
       C_B: [C_B[0], C_B[1]],
-      C_A: await localCommit(A, r_A),
-      C_new: await localCommit(B - A, r_new),
+      C_A: localCommit(A, r_A),
+      C_new: localCommit(B - A, r_new),
       K_aud: [K_aud[0], K_aud[1]],
       R_e: [R_e[0], R_e[1]],
       A_enc: a_enc.toString(),
@@ -369,76 +364,7 @@ function assetPath(rel: string): string {
   return new URL(`circuits/build/${rel}`, repoRoot).pathname;
 }
 
-// JubJub curve parameters (same as jubjub.circom and commitment.rs).
-const D =
-  19257038036680949359750312669786877991949435402254120286184196891950884077233n;
-const FR_Q = FR_MODULUS;
-
-// Generator G from jubjub.circom: PiiloGeneratorG()
-const G: JubJubPoint = [
-  "52011214036797608008763021134739816867182510661071949920602030138765591619595",
-  "36017543053724001483519641180346241195937746995850157919072206337752529044138",
-];
-
-// Generator H from jubjub.circom: PiiloGeneratorH()
-const H: JubJubPoint = [
-  "2641322346204092426446313763048872749581807614122456322352786044536967383341",
-  "12433362859382302755418372944023213970869823563090304431189761096447391844644",
-];
-
-function modFr(v: bigint): bigint {
-  return ((v % FR_Q) + FR_Q) % FR_Q;
-}
-
-function edwardsAdd(
-  [x1, y1]: [bigint, bigint],
-  [x2, y2]: [bigint, bigint]
-): [bigint, bigint] {
-  // Complete twisted Edwards addition: -x^2 + y^2 = 1 + d*x^2*y^2, a = -1
-  // x3 = (x1*y2 + y1*x2) / (1 + d*x1*x2*y1*y2)
-  // y3 = (y1*y2 + x1*x2) / (1 - d*x1*x2*y1*y2)
-  const b = modFr(x1 * y2);
-  const c = modFr(y1 * x2);
-  const dTau = modFr(D * modFr(b * c));
-  const xNum = modFr(b + c);
-  const xDen = modFr(1n + dTau);
-  const yNum = modFr(modFr(y1 * y2) + modFr(x1 * x2));
-  const yDen = modFr(1n - dTau);
-
-  const xOut = modFr(xNum * modInv(xDen, FR_Q));
-  const yOut = modFr(yNum * modInv(yDen, FR_Q));
-  return [xOut, yOut];
-}
-
-function modInv(a: bigint, m: bigint): bigint {
-  // Extended Euclidean algorithm.
-  let [old_r, r] = [a, m];
-  let [old_s, s] = [1n, 0n];
-  while (r !== 0n) {
-    const q = old_r / r;
-    [old_r, r] = [r, old_r - q * r];
-    [old_s, s] = [s, old_s - q * s];
-  }
-  return modFr(old_s);
-}
-
-function scalarMul(scalar: bigint, [px, py]: [bigint, bigint]): [bigint, bigint] {
-  let acc: [bigint, bigint] = [0n, 1n]; // identity
-  let cur: [bigint, bigint] = [px, py];
-  let s = scalar;
-  while (s > 0n) {
-    if (s & 1n) acc = edwardsAdd(acc, cur);
-    cur = edwardsAdd(cur, cur);
-    s >>= 1n;
-  }
-  return acc;
-}
-
-async function localCommit(value: bigint, blinding: bigint): Promise<[string, string]> {
-  const gPt: [bigint, bigint] = [BigInt(G[0]), BigInt(G[1])];
-  const hPt: [bigint, bigint] = [BigInt(H[0]), BigInt(H[1])];
-  const vG = scalarMul(value, gPt);
-  const rH = scalarMul(blinding, hPt);
-  const sum = edwardsAdd(vG, rH);
-  return [sum[0].toString(), sum[1].toString()];
+function localCommit(value: bigint, blinding: bigint): [string, string] {
+  const [x, y] = edwardsAdd(scalarMul(value, G), scalarMul(blinding, H));
+  return [x.toString(), y.toString()];
 }

@@ -94,6 +94,18 @@ function encodeFrBytes(v: bigint): xdr.ScVal {
   return toScvBytes(hexToBytes(v.toString(16).padStart(64, "0")));
 }
 
+// Decode a big-endian Uint8Array (BytesN<32>) to a bigint.
+function bytesToBigInt(b: Uint8Array | Buffer): bigint {
+  let hex = "";
+  for (const byte of new Uint8Array(b)) hex += byte.toString(16).padStart(2, "0");
+  return BigInt("0x" + hex);
+}
+
+// Decimal-string form of bytesToBigInt — used where JubJubPoint strings are expected.
+function bytesToDec(b: Uint8Array | Buffer): string {
+  return bytesToBigInt(b).toString();
+}
+
 // ── Transaction lifecycle ────────────────────────────────────────────────────
 
 export class PiiloStellar {
@@ -237,11 +249,6 @@ export class PiiloStellar {
       throw new Error("get_auditor_key simulation failed");
 
     const val = scValToNative(sim.result.retval) as { x: Uint8Array; y: Uint8Array };
-    const bytesToDec = (b: Uint8Array): string => {
-      let hex = "";
-      for (const byte of b) hex += byte.toString(16).padStart(2, "0");
-      return BigInt("0x" + hex).toString();
-    };
     return [bytesToDec(val.x), bytesToDec(val.y)];
   }
 
@@ -297,13 +304,6 @@ export class PiiloStellar {
     const val = scValToNative(sim.result.retval);
     if (!val) return null;
 
-    // BytesN<32> → bigint decimal string.  String(Uint8Array) gives CSV bytes;
-    // we need the bytes as a big-endian 256-bit integer.
-    const bytesToDec = (b: Uint8Array): string => {
-      let hex = "";
-      for (const byte of b) hex += byte.toString(16).padStart(2, "0");
-      return BigInt("0x" + hex).toString();
-    };
     const pt = (raw: { x: Uint8Array; y: Uint8Array }): JubJubPoint =>
       [bytesToDec(raw.x), bytesToDec(raw.y)];
 
@@ -320,7 +320,7 @@ export class PiiloStellar {
   // notes are excluded). Covers the 7-day RPC retention window.
   async getTransferNotes(
     recipientAddress: string
-  ): Promise<Array<{ from: string; encryptedNote: Uint8Array }>> {
+  ): Promise<Array<{ from: string; encryptedNote: Uint8Array; r_e: JubJubPoint; a_enc: bigint }>> {
     const latest = await this.rpc.getLatestLedger();
     // Use 100_000 ledgers (~5.8 days) instead of 120_960 to stay safely inside
     // the RPC's actual retention window (exact boundary varies; 120_960 causes
@@ -361,16 +361,22 @@ export class PiiloStellar {
         filters: [{ type: "contract", contractIds, topics: [[transferSym]] }],
         limit: 200,
       });
-      const results: Array<{ from: string; encryptedNote: Uint8Array }> = [];
+      const results: Array<{ from: string; encryptedNote: Uint8Array; r_e: JubJubPoint; a_enc: bigint }> = [];
       for (const ev of resp.events) {
         try {
           const data = scValToNative(ev.value) as {
-            from: unknown; to: unknown; encrypted_note: Uint8Array | Buffer;
+            from: unknown;
+            to: unknown;
+            encrypted_note: Uint8Array | Buffer;
+            r_e: { x: Uint8Array | Buffer; y: Uint8Array | Buffer };
+            a_enc: Uint8Array | Buffer;
           };
           if (addrStr(data.to) !== recipientAddress) continue;
           results.push({
             from: addrStr(data.from),
             encryptedNote: new Uint8Array(data.encrypted_note),
+            r_e: [bytesToDec(data.r_e.x), bytesToDec(data.r_e.y)],
+            a_enc: bytesToBigInt(data.a_enc),
           });
         } catch (e) {
           console.error("[piilo] malformed transfer event:", e);
