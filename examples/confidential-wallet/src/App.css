@@ -525,6 +525,87 @@ button:disabled {
   color: var(--bright);
 }
 
+/* ── auditor panel ──────────────────────────────────────────────────────────── */
+.card-auditor {
+  border-left-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 4%, var(--surface));
+}
+
+.card-auditor:hover {
+  border-left-color: var(--warn);
+}
+
+.badge-restricted {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.btn-auditor {
+  background: color-mix(in srgb, var(--warn) 14%, var(--border2));
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+}
+
+.btn-auditor:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warn) 24%, var(--border2));
+  transform: translateY(-1px);
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.audit-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.audit-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.audit-table tr:last-child td {
+  border-bottom: none;
+}
+
+.audit-table tr:hover td {
+  background: color-mix(in srgb, var(--warn) 4%, transparent);
+}
+
+.audit-amount {
+  font-family: var(--font-disp);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--warn);
+  letter-spacing: 0.03em;
+}
+
+.audit-empty {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 4px 0;
+}
+
 /* ── responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   main { padding: 20px 16px; }
