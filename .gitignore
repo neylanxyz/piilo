@@ -5,11 +5,16 @@ target/
 
 # Circom / snarkjs
 circuits/node_modules/
-circuits/build/pot14_0.ptau
-circuits/build/pot14_1.ptau
-circuits/build/pot14_final.ptau
+# ptau ceremony files (large, reproducible from ceremony)
+circuits/build/pot*.ptau
+# intermediate compiler outputs (not needed at runtime)
+circuits/build/*.r1cs
+circuits/build/*.sym
+# zkey phase 0 (pre-contribution, not the final proving key)
 circuits/build/transfer_0.zkey
 circuits/build/withdraw_0.zkey
+# test circuit build artifacts (entirely generated)
+circuits/test/build/
 
 # circomlib is tracked as a git submodule
 # (do not commit its .git directory or files directly)
