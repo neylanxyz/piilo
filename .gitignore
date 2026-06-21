@@ -20,6 +20,7 @@ circuits/test/build/
 # (do not commit its .git directory or files directly)
 
 # SDK / Frontend / Examples
+node_modules/
 packages/*/node_modules/
 packages/*/dist/
 packages/*/.next/

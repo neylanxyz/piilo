@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Piilo, PiiloStellar, decryptAuditorNote } from "@piilo/sdk";
+import { Piilo } from "@piilo/sdk";
 import logoSrc from "./assets/logo.png";
+import AuditorPage from "./AuditorPage.jsx";
 
 // ── config ─────────────────────────────────────────────────────────────────────
 // Set VITE_CONTRACT_ID in a .env file once the contract is deployed to testnet.
@@ -84,12 +85,16 @@ export default function App() {
   const [transferTo, setTransferTo]   = useState("");
   const [transferAmt, setTransferAmt] = useState("50");
 
-  const [auditorKey, setAuditorKey]     = useState("");
-  const [scanAddress, setScanAddress]   = useState("");
-  const [auditResults, setAuditResults] = useState(null); // null = not scanned yet
-  const [auditing, setAuditing]         = useState(false);
+  const [page, setPage] = useState(() =>
+    window.location.hash === "#auditor" ? "auditor" : "wallet"
+  );
 
   const logRef = useRef(null);
+
+  function navigate(p) {
+    setPage(p);
+    window.location.hash = p === "auditor" ? "auditor" : "";
+  }
 
   // ── log ──────────────────────────────────────────────────────────────────────
   const emit = useCallback((msg, type = "info") => {
@@ -186,28 +191,6 @@ export default function App() {
       return "Withdrawn — balance is now public";
     }, { mutatesBalance: true });
 
-  async function handleAudit() {
-    if (!CONTRACT_ID || !auditorKey || !scanAddress || auditing) return;
-    setAuditing(true);
-    emit("Auditor scan…");
-    try {
-      const kAud = BigInt(auditorKey.trim());
-      const stellar = new PiiloStellar(CONTRACT_ID, NETWORK);
-      const events = await stellar.getTransferNotes(scanAddress, true);
-      const results = events.map(({ from, r_e, a_enc }) => ({
-        from,
-        amount: decryptAuditorNote(kAud, r_e, a_enc),
-        encryptedHex: "0x" + a_enc.toString(16).slice(0, 8) + "…",
-      }));
-      setAuditResults(results);
-      emit(`Found ${results.length} transfer(s) in the 7-day window`, results.length ? "ok" : "warn");
-    } catch (e) {
-      emit(`Audit failed: ${e.message}`, "error");
-      setAuditResults(null);
-    }
-    setAuditing(false);
-  }
-
   const handleExport = () =>
     op("Export backup", async () => {
       const json = await piilo.exportBackup();
@@ -256,19 +239,40 @@ export default function App() {
             <div className="logo-tag">confidential wallet · powered by @piilo/sdk</div>
           </div>
         </div>
-        {!wallet ? (
-          <button className="btn-connect" onClick={connect} disabled={busy}>
-            {busy ? "connecting…" : "Connect Freighter"}
+
+        <nav className="header-nav">
+          <button
+            className={`nav-tab ${page === "wallet" ? "nav-tab-active" : ""}`}
+            onClick={() => navigate("wallet")}
+          >
+            Wallet
           </button>
-        ) : (
-          <div className="wallet-chip">
-            <span className="dot live" />
-            {shortenAddr(wallet.address)}
-          </div>
+          <button
+            className={`nav-tab nav-tab-auditor ${page === "auditor" ? "nav-tab-active nav-tab-auditor-active" : ""}`}
+            onClick={() => navigate("auditor")}
+          >
+            Auditor
+          </button>
+        </nav>
+
+        {page === "wallet" && (
+          !wallet ? (
+            <button className="btn-connect" onClick={connect} disabled={busy}>
+              {busy ? "connecting…" : "Connect Freighter"}
+            </button>
+          ) : (
+            <div className="wallet-chip">
+              <span className="dot live" />
+              {shortenAddr(wallet.address)}
+            </div>
+          )
         )}
+        {page === "auditor" && <div style={{ width: 160 }} />}
       </header>
 
-      <main>
+      {page === "auditor" && <AuditorPage />}
+
+      {page === "wallet" && <main>
         {!wallet ? (
           <div className="splash">
             <img src={logoSrc} alt="" className="splash-logo" />
@@ -461,70 +465,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* ── auditor panel ── */}
-            <section className="card span2 card-auditor">
-              <h2>
-                Auditor View
-                <span className="badge-restricted">restricted</span>
-              </h2>
-              <p className="card-desc">
-                The registered auditor can decrypt transfer amounts from on-chain events
-                using their private key. Addresses are already public — only amounts are
-                hidden from everyone else.
-              </p>
-              <div className="field-col">
-                <input
-                  type="password"
-                  value={auditorKey}
-                  onChange={(e) => setAuditorKey(e.target.value)}
-                  className="input mono"
-                  placeholder="k_aud — auditor private scalar (decimal or 0x hex)"
-                />
-                <div className="field-row">
-                  <input
-                    type="text"
-                    value={scanAddress}
-                    onChange={(e) => setScanAddress(e.target.value)}
-                    className="input mono"
-                    placeholder="Address to scan for incoming transfers (G…)"
-                  />
-                  <button
-                    className="btn btn-auditor"
-                    onClick={handleAudit}
-                    disabled={auditing || !CONTRACT_ID || !auditorKey || !scanAddress}
-                  >
-                    {auditing ? "scanning…" : "Scan"}
-                  </button>
-                </div>
-              </div>
-              {auditResults !== null && (
-                auditResults.length === 0 ? (
-                  <div className="audit-empty">
-                    No transfers to this address in the last 7 days.
-                  </div>
-                ) : (
-                  <table className="audit-table">
-                    <thead>
-                      <tr>
-                        <th>From</th>
-                        <th>Decrypted amount</th>
-                        <th>A_enc (on-chain)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {auditResults.map((r, i) => (
-                        <tr key={i}>
-                          <td className="mono">{shortenAddr(r.from)}</td>
-                          <td className="audit-amount">{xlmFmt(r.amount)}</td>
-                          <td className="mono dim">{r.encryptedHex}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )
-              )}
-            </section>
-
             {/* ── log ── */}
             <section className="card span2 card-log">
               <h2>Activity</h2>
@@ -551,7 +491,7 @@ export default function App() {
             <code>packages/frontend/.env</code> after deploying to testnet.
           </div>
         )}
-      </main>
+      </main>}
     </div>
   );
 }

@@ -525,6 +525,142 @@ button:disabled {
   color: var(--bright);
 }
 
+/* ── header nav ─────────────────────────────────────────────────────────────── */
+.header-nav {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.nav-tab {
+  font-family: var(--font-disp);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 18px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-tab:hover:not(.nav-tab-active) {
+  background: var(--border);
+  color: var(--text);
+}
+
+.nav-tab-active {
+  background: var(--border2);
+  color: var(--bright);
+}
+
+.nav-tab-auditor:hover:not(.nav-tab-auditor-active) {
+  color: var(--warn);
+}
+
+.nav-tab-auditor-active {
+  color: var(--warn) !important;
+  background: color-mix(in srgb, var(--warn) 12%, var(--border2)) !important;
+}
+
+/* ── auditor page ────────────────────────────────────────────────────────────── */
+.auditor-main {
+  flex: 1;
+  padding: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.auditor-hero {
+  margin-bottom: 32px;
+  border-left: 3px solid var(--warn);
+  padding-left: 20px;
+}
+
+.auditor-hero-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--warn);
+  margin-bottom: 8px;
+}
+
+.auditor-hero-title {
+  font-family: var(--font-disp);
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--bright);
+  margin-bottom: 10px;
+}
+
+.auditor-hero-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 620px;
+}
+
+.auditor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.audit-summary {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.audit-total {
+  font-family: var(--font-disp);
+  font-weight: 700;
+  color: var(--warn);
+}
+
+.badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--border2);
+  color: var(--muted);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 0 6px;
+}
+
+.badge-count-found {
+  background: color-mix(in srgb, var(--warn) 16%, var(--border2));
+  color: var(--warn);
+}
+
+@media (max-width: 700px) {
+  .auditor-grid { grid-template-columns: 1fr; }
+  .auditor-hero-title { font-size: 28px; }
+  .header-nav { display: none; }
+}
+
 /* ── auditor panel ──────────────────────────────────────────────────────────── */
 .card-auditor {
   border-left-color: var(--warn);
