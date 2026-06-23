@@ -59,6 +59,7 @@ pub enum PiiloError {
     InvalidProof = 3,
     NoPendingBalance = 4,
     InsufficientVault = 5,
+    SelfTransfer = 6,
 }
 
 #[contractevent(topics = ["deposit"])]
@@ -269,6 +270,9 @@ impl Piilo {
         a_enc: BytesN<32>,
     ) -> Result<(), PiiloError> {
         sender.require_auth();
+        if sender == recipient {
+            return Err(PiiloError::SelfTransfer);
+        }
 
         let mut sender_account = load_account(&env, &sender)?;
 

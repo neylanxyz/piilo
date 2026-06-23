@@ -429,6 +429,28 @@ fn transfer_without_existing_account_fails() {
 }
 
 #[test]
+fn self_transfer_is_rejected() {
+    let s = setup();
+    let client = PiiloClient::new(&s.env, &s.piilo_id);
+    let alice = Address::generate(&s.env);
+    fund(&s.env, &s.token_id, &alice, 1_000);
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
+
+    let note = Bytes::from_array(&s.env, &[0u8; 4]);
+    let result = client.try_transfer(
+        &alice,
+        &alice, // same address as sender
+        &test_point(&s.env, 1),
+        &test_point(&s.env, 2),
+        &dummy_proof(&s.env),
+        &note,
+        &dummy_r_e(&s.env),
+        &dummy_a_enc(&s.env),
+    );
+    assert_eq!(result, Err(Ok(PiiloError::SelfTransfer)));
+}
+
+#[test]
 fn settle_pending_merges_and_clears() {
     let s = setup();
     let client = PiiloClient::new(&s.env, &s.piilo_id);
