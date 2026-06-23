@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install",
-  "buildCommand": "npm run build --workspace=examples/confidential-wallet",
-  "outputDirectory": "examples/confidential-wallet/dist",
+  "buildCommand": "bash scripts/build-site.sh",
+  "outputDirectory": "frontend/dist",
   "framework": null
 }

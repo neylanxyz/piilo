@@ -3,6 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/sdk",
+    "frontend",
     "examples/confidential-wallet",
     "examples/confidential-payroll"
   ]

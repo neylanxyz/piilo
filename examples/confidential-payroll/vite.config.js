@@ -49,6 +49,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["snarkjs", "@piilo/sdk"],
   },
+  base: "./",   // relative asset paths — works served at any subdirectory
   build: {
     target: "esnext",
   },
