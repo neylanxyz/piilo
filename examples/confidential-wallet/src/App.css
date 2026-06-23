@@ -257,6 +257,40 @@ main {
   font-family: var(--font-mono);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.token-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.token-tab {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.token-tab:hover:not(:disabled) {
+  border-color: var(--accent2);
+  color: var(--text);
+}
+
+.token-tab-active {
+  background: var(--accent2);
+  border-color: var(--accent2);
+  color: #fff;
+}
+
 /* ── balance card ──────────────────────────────────────────────────────────── */
 .balance-card {
   background: linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--accent2) 8%, var(--surface)) 100%);

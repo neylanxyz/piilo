@@ -4,13 +4,14 @@ import logoSrc from "./assets/logo.png";
 import AuditorPage from "./AuditorPage.jsx";
 
 // ── config ─────────────────────────────────────────────────────────────────────
-// deploy.mjs writes VITE_PIILO_XLM after each deploy; VITE_CONTRACT_ID is the
-// legacy fallback for contracts deployed before multi-token support.
-const CONTRACT_ID =
-  import.meta.env.VITE_PIILO_XLM ??
-  import.meta.env.VITE_CONTRACT_ID ??
-  "";
+// deploy.mjs writes VITE_PIILO_XLM / VITE_PIILO_USDC after each deploy.
+// VITE_CONTRACT_ID is a legacy fallback for pre-multi-token deploys.
+const CONTRACT_IDS_ENV = {
+  XLM:  import.meta.env.VITE_PIILO_XLM  ?? import.meta.env.VITE_CONTRACT_ID ?? undefined,
+  USDC: import.meta.env.VITE_PIILO_USDC ?? undefined,
+};
 
+const SUPPORTED_ASSETS = ["XLM", "USDC"];
 const NETWORK = "testnet";
 
 // ── freighter wallet adapter ───────────────────────────────────────────────────
@@ -57,16 +58,16 @@ function shortenAddr(addr) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-const MAX_SANE_STROOPS = 500_000_000_000_000_000n; // 50B XLM — total supply
+const MAX_SANE_STROOPS = 500_000_000_000_000_000n;
 
-function xlmFmt(stroops) {
+function tokenFmt(stroops, symbol = "XLM") {
   if (stroops == null) return "—";
   const s = BigInt(stroops);
   if (s < 0n || s > MAX_SANE_STROOPS) return "? (wrong key)";
   const whole = s / 10_000_000n;
   const frac  = s % 10_000_000n;
   const fracStr = frac.toString().padStart(7, "0").replace(/0+$/, "");
-  return fracStr ? `${whole}.${fracStr} XLM` : `${whole} XLM`;
+  return fracStr ? `${whole}.${fracStr} ${symbol}` : `${whole} ${symbol}`;
 }
 
 function commitmentFmt(point) {
@@ -79,6 +80,7 @@ function commitmentFmt(point) {
 export default function App() {
   const [wallet, setWallet] = useState(null);   // { address, walletAdapter }
   const [piilo, setPiilo]   = useState(null);
+  const [asset, setAsset]         = useState("XLM");
   const [balance, setBalance]     = useState(null);
   const [onChain, setOnChain]     = useState(null); // { balance_commitment, has_pending }
   const [fees, setFees]           = useState(null); // { depositFeeBps, withdrawFeeBps, transferFlatFee }
@@ -117,28 +119,43 @@ export default function App() {
     try {
       const w = await makeFreighterAdapter();
       setWallet(w);
+      await initSdk(w, asset);
+    } catch (e) {
+      emit(e.message, "error");
+    }
+    setBusy(false);
+  }
 
-      if (!CONTRACT_ID) {
-        emit("Connected. Set VITE_CONTRACT_ID in .env to enable on-chain ops.", "warn");
-        setBusy(false);
-        return;
-      }
-
+  async function initSdk(w, selectedAsset) {
+    try {
       const sdk = new Piilo({
         network: NETWORK,
-        contractId: CONTRACT_ID || undefined, // "" → fall back to deployments.json lookup
-        asset: "XLM",
+        contractId: CONTRACT_IDS_ENV[selectedAsset] || undefined,
+        asset: selectedAsset,
         wallet: w.walletAdapter,
       });
       setPiilo(sdk);
-      emit(`Connected as ${shortenAddr(w.address)}`, "ok");
-      const [, f] = await Promise.all([
+      emit(`Connected as ${shortenAddr(w.address)} · ${selectedAsset}`, "ok");
+      await Promise.all([
         refresh(sdk, w.address),
         sdk.getFees().then(setFees).catch(() => null),
       ]);
     } catch (e) {
       emit(e.message, "error");
+      setPiilo(null);
     }
+  }
+
+  async function switchAsset(newAsset) {
+    if (!wallet || busy || newAsset === asset) return;
+    setAsset(newAsset);
+    setBalance(null);
+    setOnChain(null);
+    setFees(null);
+    setPiilo(null);
+    setBusy(true);
+    emit(`Switching to ${newAsset}…`);
+    await initSdk(wallet, newAsset);
     setBusy(false);
   }
 
@@ -180,28 +197,28 @@ export default function App() {
       const fee = fees ? stroops * BigInt(fees.depositFeeBps) / 10_000n : 0n;
       const credited = stroops - fee;
       return fee > 0n
-        ? `Deposited ${depositAmt} XLM — credited ${xlmFmt(credited)} (fee ${xlmFmt(fee)})`
-        : `Deposited ${depositAmt} XLM`;
+        ? `Deposited ${depositAmt} ${asset} — credited ${tokenFmt(credited, asset)} (fee ${tokenFmt(fee, asset)})`
+        : `Deposited ${depositAmt} ${asset}`;
     }, { mutatesBalance: true });
 
   const handleTransfer = () =>
     op("Transfer", async () => {
       const stroops = BigInt(Math.round(parseFloat(transferAmt) * 1e7));
       await piilo.transfer({ to: transferTo, amount: stroops });
-      return `Sent ${transferAmt} XLM → ${shortenAddr(transferTo)}`;
+      return `Sent ${transferAmt} ${asset} → ${shortenAddr(transferTo)}`;
     }, { mutatesBalance: true });
 
   const handleSettle = () =>
     op("Settle", async () => {
       const result = await piilo.settleIfPending();
       if (!result) return "No pending balance";
-      return `Settled +${xlmFmt(result.received)}`;
+      return `Settled +${tokenFmt(result.received, asset)}`;
     }, { mutatesBalance: true });
 
   const handleWithdraw = () =>
     op("Withdraw", async () => {
       const { payout } = await piilo.withdraw();
-      return `Withdrawn — you received ${xlmFmt(payout)}`;
+      return `Withdrawn — you received ${tokenFmt(payout, asset)}`;
     }, { mutatesBalance: true });
 
   const handleExport = () =>
@@ -226,7 +243,7 @@ export default function App() {
     try {
       const json = await file.text();
       const { balance } = await piilo.importBackup(json);
-      emit(`Backup restored — balance: ${xlmFmt(balance)}`, "ok");
+      emit(`Backup restored — balance: ${tokenFmt(balance, asset)}`, "ok");
       await refresh(piilo, wallet.address);
     } catch (err) {
       emit(`Import failed: ${err.message}`, "error");
@@ -285,16 +302,32 @@ export default function App() {
         </nav>
 
         {page === "wallet" && (
-          !wallet ? (
-            <button className="btn-connect" onClick={connect} disabled={busy}>
-              {busy ? "connecting…" : "Connect Freighter"}
-            </button>
-          ) : (
-            <div className="wallet-chip">
-              <span className="dot live" />
-              {shortenAddr(wallet.address)}
-            </div>
-          )
+          <div className="header-right">
+            {wallet && (
+              <div className="token-selector">
+                {SUPPORTED_ASSETS.map((a) => (
+                  <button
+                    key={a}
+                    className={`token-tab ${asset === a ? "token-tab-active" : ""}`}
+                    onClick={() => switchAsset(a)}
+                    disabled={busy}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!wallet ? (
+              <button className="btn-connect" onClick={connect} disabled={busy}>
+                {busy ? "connecting…" : "Connect Freighter"}
+              </button>
+            ) : (
+              <div className="wallet-chip">
+                <span className="dot live" />
+                {shortenAddr(wallet.address)}
+              </div>
+            )}
+          </div>
         )}
         {page === "auditor" && <div style={{ width: 160 }} />}
       </header>
@@ -338,7 +371,7 @@ export default function App() {
                 <div className="reveal-col">
                   <div className="reveal-label">LOCAL (you see)</div>
                   <div className="reveal-value bright">
-                    {balance != null ? xlmFmt(balance) : "—"}
+                    {balance != null ? tokenFmt(balance, asset) : "—"}
                   </div>
                 </div>
                 <div className="reveal-divider">vs</div>
@@ -378,7 +411,7 @@ export default function App() {
                 <button
                   className="btn"
                   onClick={handleDeposit}
-                  disabled={busy || !CONTRACT_ID}
+                  disabled={busy || !piilo}
                 >
                   Deposit
                 </button>
@@ -387,7 +420,7 @@ export default function App() {
                 const { fee, credited } = depositFeePreview(depositAmt);
                 return (
                   <div className="fee-hint">
-                    Fee {xlmFmt(fee)} ({fees.depositFeeBps / 100}%) · credited {xlmFmt(credited)}
+                    Fee {tokenFmt(fee, asset)} ({fees.depositFeeBps / 100}%) · credited {tokenFmt(credited, asset)}
                   </div>
                 );
               })()}
@@ -421,7 +454,7 @@ export default function App() {
                   <button
                     className="btn"
                     onClick={handleTransfer}
-                    disabled={busy || !CONTRACT_ID || !transferTo}
+                    disabled={busy || !piilo || !transferTo}
                   >
                     Send
                   </button>
@@ -429,7 +462,7 @@ export default function App() {
               </div>
               {fees?.transferFlatFee > 0n && (
                 <div className="fee-hint">
-                  Flat fee {xlmFmt(fees.transferFlatFee)} charged from your public wallet
+                  Flat fee {tokenFmt(fees.transferFlatFee, asset)} charged from your public wallet
                 </div>
               )}
             </section>
@@ -447,7 +480,7 @@ export default function App() {
               <button
                 className={`btn ${hasPending ? "btn-accent" : ""}`}
                 onClick={handleSettle}
-                disabled={busy || !CONTRACT_ID}
+                disabled={busy || !piilo}
               >
                 {hasPending ? "⚡ Claim incoming" : "Check incoming"}
               </button>
@@ -463,15 +496,15 @@ export default function App() {
               <button
                 className="btn btn-danger"
                 onClick={handleWithdraw}
-                disabled={busy || !CONTRACT_ID || !balance}
+                disabled={busy || !piilo || !balance}
               >
-                Withdraw {balance ? xlmFmt(balance) : ""}
+                Withdraw {balance ? tokenFmt(balance, asset) : ""}
               </button>
               {withdrawFeePreview() && (() => {
                 const { fee, payout } = withdrawFeePreview();
                 return (
                   <div className="fee-hint">
-                    Fee {xlmFmt(fee)} ({fees.withdrawFeeBps / 100}%) · you receive {xlmFmt(payout)}
+                    Fee {tokenFmt(fee, asset)} ({fees.withdrawFeeBps / 100}%) · you receive {tokenFmt(payout, asset)}
                   </div>
                 );
               })()}
@@ -498,7 +531,7 @@ export default function App() {
                 <button
                   className={`btn${backupStale ? " btn-accent" : ""}`}
                   onClick={handleExport}
-                  disabled={busy || !CONTRACT_ID}
+                  disabled={busy || !piilo}
                 >
                   {backupStale ? "⬇ Update backup now" : "Download backup"}
                 </button>
@@ -509,7 +542,7 @@ export default function App() {
                     accept=".json,application/json"
                     style={{ display: "none" }}
                     onChange={handleImport}
-                    disabled={busy || !CONTRACT_ID}
+                    disabled={busy || !piilo}
                   />
                 </label>
               </div>
@@ -534,11 +567,10 @@ export default function App() {
           </div>
         )}
 
-        {!CONTRACT_ID && wallet && (
+        {!piilo && wallet && (
           <div className="notice">
-            <strong>Contract not configured.</strong>{" "}
-            Run <code>node scripts/deploy.mjs</code> to deploy, or add{" "}
-            <code>VITE_PIILO_XLM=C…</code> to <code>.env</code> manually.
+            <strong>No {asset} contract configured.</strong>{" "}
+            Run <code>node scripts/deploy.mjs{asset !== "XLM" ? ` --symbol ${asset} --token-address <SAC>` : ""}</code> to deploy.
           </div>
         )}
       </main>}
