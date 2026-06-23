@@ -89,6 +89,10 @@ export class Piilo {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
+  async getFees(): Promise<{ depositFeeBps: number; withdrawFeeBps: number; transferFlatFee: bigint }> {
+    return this.stellar.getFees();
+  }
+
   /** Current local plaintext balance. Does not require a network call. */
   async getBalance(): Promise<bigint> {
     const address = await this.myAddress();

@@ -4,8 +4,12 @@ import logoSrc from "./assets/logo.png";
 import AuditorPage from "./AuditorPage.jsx";
 
 // ── config ─────────────────────────────────────────────────────────────────────
-// Set VITE_CONTRACT_ID in a .env file once the contract is deployed to testnet.
-const CONTRACT_ID = import.meta.env.VITE_CONTRACT_ID ?? "";
+// deploy.mjs writes VITE_PIILO_XLM after each deploy; VITE_CONTRACT_ID is the
+// legacy fallback for contracts deployed before multi-token support.
+const CONTRACT_ID =
+  import.meta.env.VITE_PIILO_XLM ??
+  import.meta.env.VITE_CONTRACT_ID ??
+  "";
 
 const NETWORK = "testnet";
 
@@ -77,6 +81,7 @@ export default function App() {
   const [piilo, setPiilo]   = useState(null);
   const [balance, setBalance]     = useState(null);
   const [onChain, setOnChain]     = useState(null); // { balance_commitment, has_pending }
+  const [fees, setFees]           = useState(null); // { depositFeeBps, withdrawFeeBps, transferFlatFee }
   const [log, setLog]             = useState([]);
   const [busy, setBusy]           = useState(false);
   const [backupStale, setBackupStale] = useState(false);
@@ -121,12 +126,16 @@ export default function App() {
 
       const sdk = new Piilo({
         network: NETWORK,
-        contractId: CONTRACT_ID,
+        contractId: CONTRACT_ID || undefined, // "" → fall back to deployments.json lookup
+        asset: "XLM",
         wallet: w.walletAdapter,
       });
       setPiilo(sdk);
       emit(`Connected as ${shortenAddr(w.address)}`, "ok");
-      await refresh(sdk, w.address);
+      const [, f] = await Promise.all([
+        refresh(sdk, w.address),
+        sdk.getFees().then(setFees).catch(() => null),
+      ]);
     } catch (e) {
       emit(e.message, "error");
     }
@@ -168,7 +177,11 @@ export default function App() {
     op("Deposit", async () => {
       const stroops = BigInt(Math.round(parseFloat(depositAmt) * 1e7));
       await piilo.deposit(stroops);
-      return `Deposited ${depositAmt} XLM`;
+      const fee = fees ? stroops * BigInt(fees.depositFeeBps) / 10_000n : 0n;
+      const credited = stroops - fee;
+      return fee > 0n
+        ? `Deposited ${depositAmt} XLM — credited ${xlmFmt(credited)} (fee ${xlmFmt(fee)})`
+        : `Deposited ${depositAmt} XLM`;
     }, { mutatesBalance: true });
 
   const handleTransfer = () =>
@@ -187,8 +200,8 @@ export default function App() {
 
   const handleWithdraw = () =>
     op("Withdraw", async () => {
-      await piilo.withdraw();
-      return "Withdrawn — balance is now public";
+      const { payout } = await piilo.withdraw();
+      return `Withdrawn — you received ${xlmFmt(payout)}`;
     }, { mutatesBalance: true });
 
   const handleExport = () =>
@@ -221,6 +234,22 @@ export default function App() {
     e.target.value = "";
     setBusy(false);
   };
+
+  // ── fee preview helpers ────────────────────────────────────────────────────────
+  function depositFeePreview(amtXlm) {
+    if (!fees || !amtXlm || isNaN(parseFloat(amtXlm))) return null;
+    const stroops = BigInt(Math.round(parseFloat(amtXlm) * 1e7));
+    const fee = stroops * BigInt(fees.depositFeeBps) / 10_000n;
+    if (fee === 0n) return null;
+    return { fee, credited: stroops - fee };
+  }
+
+  function withdrawFeePreview() {
+    if (!fees || balance == null || balance === 0n) return null;
+    const fee = balance * BigInt(fees.withdrawFeeBps) / 10_000n;
+    if (fee === 0n) return null;
+    return { fee, payout: balance - fee };
+  }
 
   // ── ui ─────────────────────────────────────────────────────────────────────────
   const hasPending = onChain?.has_pending;
@@ -354,6 +383,14 @@ export default function App() {
                   Deposit
                 </button>
               </div>
+              {depositFeePreview(depositAmt) && (() => {
+                const { fee, credited } = depositFeePreview(depositAmt);
+                return (
+                  <div className="fee-hint">
+                    Fee {xlmFmt(fee)} ({fees.depositFeeBps / 100}%) · credited {xlmFmt(credited)}
+                  </div>
+                );
+              })()}
             </section>
 
             {/* ── transfer ── */}
@@ -390,6 +427,11 @@ export default function App() {
                   </button>
                 </div>
               </div>
+              {fees?.transferFlatFee > 0n && (
+                <div className="fee-hint">
+                  Flat fee {xlmFmt(fees.transferFlatFee)} charged from your public wallet
+                </div>
+              )}
             </section>
 
             {/* ── settle ── */}
@@ -425,6 +467,14 @@ export default function App() {
               >
                 Withdraw {balance ? xlmFmt(balance) : ""}
               </button>
+              {withdrawFeePreview() && (() => {
+                const { fee, payout } = withdrawFeePreview();
+                return (
+                  <div className="fee-hint">
+                    Fee {xlmFmt(fee)} ({fees.withdrawFeeBps / 100}%) · you receive {xlmFmt(payout)}
+                  </div>
+                );
+              })()}
             </section>
 
             {/* ── backup / recovery ── */}
@@ -487,8 +537,8 @@ export default function App() {
         {!CONTRACT_ID && wallet && (
           <div className="notice">
             <strong>Contract not configured.</strong>{" "}
-            Add <code>VITE_CONTRACT_ID=C…</code> to{" "}
-            <code>packages/frontend/.env</code> after deploying to testnet.
+            Run <code>node scripts/deploy.mjs</code> to deploy, or add{" "}
+            <code>VITE_PIILO_XLM=C…</code> to <code>.env</code> manually.
           </div>
         )}
       </main>}
