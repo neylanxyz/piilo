@@ -26,6 +26,7 @@ packages/*/dist/
 packages/*/.next/
 examples/*/node_modules/
 examples/*/dist/
+examples/*/public/circuits/
 
 # Environment / secrets
 .env
