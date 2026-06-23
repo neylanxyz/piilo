@@ -1,12 +1,37 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const circuitsDir = path.resolve(__dirname, "../../circuits/build");
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      // Serve circuit WASM + zkey files at /circuits/* from circuits/build/.
+      // Vite's fs.allow alone doesn't map URL paths to out-of-root directories;
+      // this middleware does the explicit routing so snarkjs can fetch them.
+      name: "serve-circuits",
+      configureServer(server) {
+        server.middlewares.use("/circuits", (req, res, next) => {
+          const rel = req.url.replace(/^\//, "");
+          const filePath = path.join(circuitsDir, rel);
+          if (fs.existsSync(filePath)) {
+            res.setHeader(
+              "Content-Type",
+              filePath.endsWith(".wasm") ? "application/wasm" : "application/octet-stream"
+            );
+            fs.createReadStream(filePath).pipe(res);
+          } else {
+            next();
+          }
+        });
+      },
+    },
+  ],
   optimizeDeps: {
     exclude: ["snarkjs", "@piilo/sdk"],
   },
@@ -14,7 +39,6 @@ export default defineConfig({
     target: "esnext",
   },
   server: {
-    // Allow Vite to serve files from the repo root (circuits/build/).
     fs: { allow: ["../.."] },
   },
   resolve: {
