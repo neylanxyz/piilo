@@ -181,4 +181,6 @@ await piilo.withdraw()                       // exit privacy, receive XLM
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache-2.0 — see [LICENSE](LICENSE).
+
+`contracts/verifier/` is ported from [`stellar/soroban-examples`](https://github.com/stellar/soroban-examples) and carries its own Apache-2.0 attribution in `contracts/verifier/LICENSE` and `contracts/verifier/NOTICE`.
