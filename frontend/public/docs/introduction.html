@@ -66,12 +66,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb" data-i18n="breadcrumb.start">Getting Started</div>
-        <h1 data-i18n="page.introduction.h1"data-i18n="nav.introduction">Introduction</h1>
+        <div class="breadcrumb" data-i18n="breadcrumb.start">Getting Started</div><h1 data-i18n="page.introduction.h1"data-i18n="nav.introduction">Introduction</h1>
         <p class="page-intro" data-i18n="page.introduction.intro">Piilo is a zero-knowledge private payments protocol built on Stellar. Deposit XLM, transfer it privately, and withdraw — without any observer learning your balance or transfer amounts.</p>
       </div>
 
-      <h2>What Piilo does</h2>
+      <div data-i18n="body.introduction">
+<h2>What Piilo does</h2>
       <p>When you deposit XLM into the Piilo contract, the amount is recorded publicly <strong>once</strong> — this is unavoidable; the XLM has to move from your account. From that moment on, all subsequent operations are private:</p>
       <ul>
         <li><strong>Balances</strong> are stored as <a href="concepts/architecture.html#pedersen-commitments">Pedersen commitments</a> — elliptic curve points on the JubJub curve. The chain sees a point, not a number.</li>
@@ -108,6 +108,8 @@
         <li><a href="guides/freighter.html"data-i18n="nav.freighter">Freighter Integration</a> — connect to Freighter wallet</li>
         <li><a href="guides/security.html"data-i18n="nav.security">Security Guide</a> — how to protect the blinding factor</li>
       </ul>
+      </div>
+
     </article>
   </main>
 

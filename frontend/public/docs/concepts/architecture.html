@@ -59,12 +59,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div>
-        <h1 data-i18n="page.architecture.h1"data-i18n="nav.architecture">Architecture</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.concepts">Concepts</span></div><h1 data-i18n="page.architecture.h1"data-i18n="nav.architecture">Architecture</h1>
         <p class="page-intro" data-i18n="page.architecture.intro">Piilo combines three cryptographic building blocks: Pedersen commitments on the JubJub curve, Groth16 ZK proofs verified on-chain by a Soroban smart contract, and NaCl box encryption for payment notes.</p>
       </div>
 
-      <h2>System overview</h2>
+      <div data-i18n="body.architecture">
+<h2>System overview</h2>
       <pre><code class="language-plaintext">User browser                    Stellar / Soroban
 ────────────────────            ──────────────────────────────
 Local state                     Contract storage
@@ -222,6 +222,8 @@ const keypair = nacl.box.keyPair.fromSecretKey(seed)</code></pre>
 6. SDK: update local state
    new_balance += sum(note.amount)
    new_r = (old_r + sum(note.r_A)) mod JubJub_H_order</code></pre>
+      </div>
+
     </article>
   </main>
 </div>

@@ -86,8 +86,8 @@
 .hero-visual { display: flex; align-items: center; justify-content: center; }
 .logo-stage {
   position: relative;
-  width: clamp(180px, 30vw, 420px);
-  height: clamp(180px, 30vw, 420px);
+  width: clamp(160px, 23vw, 320px);
+  height: clamp(160px, 23vw, 320px);
 }
 .logo-ring {
   position: absolute;

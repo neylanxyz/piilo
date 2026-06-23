@@ -59,11 +59,11 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
-        <h1data-i18n="nav.settle">settleIfPending()</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div><h1data-i18n="nav.settle">settleIfPending()</h1>
       </div>
 
-      <div class="method-sig">async settleIfPending(): Promise&lt;&#123; received: bigint &#125; | null&gt;</div>
+      <div data-i18n="body.settle">
+<div class="method-sig">async settleIfPending(): Promise&lt;&#123; received: bigint &#125; | null&gt;</div>
 
       <p>Merges incoming transfers into the local balance. Must be called before received funds can be spent or withdrawn.</p>
 
@@ -122,6 +122,8 @@ setInterval(checkForIncoming, 30_000)</code></pre>
 
       <h2>Note on atomicity</h2>
       <p><code>settle_pending</code> is a single Stellar transaction. Either all pending notes are settled together, or none are. There is no partial settlement.</p>
+      </div>
+
     </article>
   </main>
 </div>

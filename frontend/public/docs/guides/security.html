@@ -59,12 +59,12 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div>
-        <h1 data-i18n="page.security.h1"data-i18n="nav.security">Security Guide</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.guides">Guides</span></div><h1 data-i18n="page.security.h1"data-i18n="nav.security">Security Guide</h1>
         <p class="page-intro" data-i18n="page.security.intro">The blinding factor <code>r</code> is your private key. This guide covers how to protect it, what to do if it's lost, and how to audit your dependencies.</p>
       </div>
 
-      <h2>The blinding factor is your private key</h2>
+      <div data-i18n="body.security">
+<h2>The blinding factor is your private key</h2>
       <p>The most critical piece of information in Piilo is the blinding factor <code>r</code>. It is the only thing needed to:</p>
       <ul>
         <li>Open your on-chain commitment (reveal your balance)</li>
@@ -164,6 +164,8 @@ async function safeSettle(
         </tbody>
       </table>
       <p>Pin dependency versions in <code>package-lock.json</code> and review updates before applying them.</p>
+      </div>
+
     </article>
   </main>
 </div>

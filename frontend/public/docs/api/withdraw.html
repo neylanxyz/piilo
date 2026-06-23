@@ -59,11 +59,11 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
-        <h1data-i18n="nav.withdraw">withdraw()</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div><h1data-i18n="nav.withdraw">withdraw()</h1>
       </div>
 
-      <div class="method-sig">async withdraw(): Promise&lt;void&gt;</div>
+      <div data-i18n="body.withdraw">
+<div class="method-sig">async withdraw(): Promise&lt;void&gt;</div>
 
       <p>Withdraws the full balance. Generates a ZK proof of balance knowledge, submits it on-chain, and receives XLM back to the Stellar account.</p>
 
@@ -105,6 +105,8 @@ console.log('Done. Balance:', await piilo.getBalance())
 
       <h2>Duration</h2>
       <p>Proof generation takes approximately 2–5 seconds. The withdrawal proof is slightly faster than the transfer proof because it has fewer constraints.</p>
+      </div>
+
     </article>
   </main>
 </div>

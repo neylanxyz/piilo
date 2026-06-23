@@ -59,11 +59,11 @@
   <main class="docs-content">
     <article>
       <div class="page-header">
-        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div>
-        <h1data-i18n="nav.deposit">deposit()</h1>
+        <div class="breadcrumb"><a href="../introduction.html">Docs</a> <span>/</span> <span data-i18n="docs.group.api">API Reference</span></div><h1data-i18n="nav.deposit">deposit()</h1>
       </div>
 
-      <div class="method-sig">async deposit(amount: bigint): Promise&lt;void&gt;</div>
+      <div data-i18n="body.deposit">
+<div class="method-sig">async deposit(amount: bigint): Promise&lt;void&gt;</div>
 
       <p>Deposits <code>amount</code> stroops into the Piilo contract. This is the entry point into the confidential system.</p>
 
@@ -118,6 +118,8 @@ const balance = await piilo.getBalance()
 
       <h2>Note public key</h2>
       <p>On the first deposit, the SDK registers the user's NaCl note public key on-chain. This key allows others to send encrypted payment notes to this address. The note keypair is derived deterministically from <code>wallet.signMessage("piilo-note-v1")</code>.</p>
+      </div>
+
     </article>
   </main>
 </div>
