@@ -535,7 +535,7 @@ export default function App() {
                 >
                   {backupStale ? "⬇ Update backup now" : "Download backup"}
                 </button>
-                <label className={`btn btn-secondary ${busy || !CONTRACT_ID ? "disabled" : ""}`}>
+                <label className={`btn btn-secondary ${busy || !piilo ? "disabled" : ""}`}>
                   Restore from backup
                   <input
                     type="file"
