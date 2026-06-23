@@ -2,11 +2,11 @@
 set -euo pipefail
 
 # Build examples (includes per-example circuit copy for standalone hosting)
-npm run build --workspace=examples/confidential-wallet
-npm run build --workspace=examples/confidential-payroll
+(cd examples/confidential-wallet && npm run build)
+(cd examples/confidential-payroll && npm run build)
 
 # Build frontend (copies circuits to frontend/dist/circuits/ via buildStart hook)
-npm run build --workspace=frontend
+(cd frontend && npm run build)
 
 # Merge examples into frontend dist so they're served under the same origin
 mkdir -p frontend/dist/examples/confidential-wallet
