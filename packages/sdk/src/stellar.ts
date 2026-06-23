@@ -426,6 +426,36 @@ export class PiiloStellar {
     }));
   }
 
+  async getFees(): Promise<{ depositFeeBps: number; withdrawFeeBps: number; transferFlatFee: bigint }> {
+    const dummyKeypair = Keypair.random();
+    const dummyAccount = await this.rpc.getAccount(dummyKeypair.publicKey()).catch(() => ({
+      id: dummyKeypair.publicKey(), sequenceNumber: () => "0",
+      incrementSequenceNumber: () => {}, accountId: () => dummyKeypair.publicKey(),
+      sequence: "0", subentryCount: 0, inflationDest: null, homeDomain: "",
+      thresholds: { lowThreshold: 0, medThreshold: 0, highThreshold: 0 },
+      flags: { authRequired: false, authRevocable: false, authImmutable: false },
+      balances: [], signers: [], data: {},
+    } as never));
+
+    const tx = new TransactionBuilder(dummyAccount as never, {
+      fee: "100", networkPassphrase: this.networkPassphrase(),
+    })
+      .addOperation(this.contract.call("get_fees"))
+      .setTimeout(5)
+      .build();
+
+    const sim = await this.rpc.simulateTransaction(tx);
+    if (rpc.Api.isSimulationError(sim) || !sim.result)
+      return { depositFeeBps: 0, withdrawFeeBps: 0, transferFlatFee: 0n };
+
+    const val = scValToNative(sim.result.retval) as [bigint, bigint, bigint];
+    return {
+      depositFeeBps: Number(val[0]),
+      withdrawFeeBps: Number(val[1]),
+      transferFlatFee: BigInt(val[2]),
+    };
+  }
+
   async getNotePubkey(address: string): Promise<Uint8Array | null> {
     const dummyKeypair = Keypair.random();
     const dummyAccount = await this.rpc

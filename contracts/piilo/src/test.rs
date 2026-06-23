@@ -160,6 +160,7 @@ struct Setup {
     env: Env,
     piilo_id: Address,
     token_id: Address,
+    treasury: Address,
     g: Point,
     h: Point,
     transfer_circuit: Circuit<11>,
@@ -197,15 +198,19 @@ fn setup() -> Setup {
     let h = test_point(&env, 200);
     let auditor_key = test_point(&env, 999);
 
+    let piilo_admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    // Zero fees so existing tests don't need updating. See fee_* tests below.
     let piilo_id = env.register(
         Piilo,
-        (g.clone(), h.clone(), verifier_id, transfer_vk, withdraw_vk, token_id.clone(), auditor_key.clone()),
+        (g.clone(), h.clone(), verifier_id, transfer_vk, withdraw_vk, token_id.clone(), auditor_key.clone(), piilo_admin, treasury.clone(), 0i128, 0i128, 0i128),
     );
 
     Setup {
         env,
         piilo_id,
         token_id,
+        treasury,
         g,
         h,
         transfer_circuit,
@@ -424,6 +429,28 @@ fn transfer_without_existing_account_fails() {
 }
 
 #[test]
+fn self_transfer_is_rejected() {
+    let s = setup();
+    let client = PiiloClient::new(&s.env, &s.piilo_id);
+    let alice = Address::generate(&s.env);
+    fund(&s.env, &s.token_id, &alice, 1_000);
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
+
+    let note = Bytes::from_array(&s.env, &[0u8; 4]);
+    let result = client.try_transfer(
+        &alice,
+        &alice, // same address as sender
+        &test_point(&s.env, 1),
+        &test_point(&s.env, 2),
+        &dummy_proof(&s.env),
+        &note,
+        &dummy_r_e(&s.env),
+        &dummy_a_enc(&s.env),
+    );
+    assert_eq!(result, Err(Ok(PiiloError::SelfTransfer)));
+}
+
+#[test]
 fn settle_pending_merges_and_clears() {
     let s = setup();
     let client = PiiloClient::new(&s.env, &s.piilo_id);
@@ -536,9 +563,11 @@ fn single_deposit_fits_real_mainnet_resource_limits() {
     // budget before deposit() even runs. base_point() is just BytesN::from_array
     // (a memory op, no budget impact) so it doesn't skew the deposit measurement.
     let auditor_key = base_point(&env);
+    let piilo_admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
     let piilo_id = env.register(
         Piilo,
-        (g, h, verifier_id, transfer_vk, withdraw_vk, token_id.clone(), auditor_key),
+        (g, h, verifier_id, transfer_vk, withdraw_vk, token_id.clone(), auditor_key, piilo_admin, treasury, 0i128, 0i128, 0i128),
     );
 
     let client = PiiloClient::new(&env, &piilo_id);
@@ -577,9 +606,11 @@ fn transfer_real_cost_measurement() {
     // base_point() is hardcoded bytes (no scalar_mul) — avoids consuming the
     // ~12M CPU instructions that test_point(999) would eat before deposit runs.
     let auditor_key = base_point(&env);
+    let piilo_admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
     let piilo_id = env.register(
         Piilo,
-        (g, h, verifier_id, transfer_vk, withdraw_vk, token_id.clone(), auditor_key.clone()),
+        (g, h, verifier_id, transfer_vk, withdraw_vk, token_id.clone(), auditor_key.clone(), piilo_admin, treasury, 0i128, 0i128, 0i128),
     );
 
     let client = PiiloClient::new(&env, &piilo_id);
@@ -605,6 +636,7 @@ fn transfer_real_cost_measurement() {
         env: env.clone(),
         piilo_id: piilo_id.clone(),
         token_id: token_id.clone(),
+        treasury: Address::generate(&env),
         g: test_point(&env, 100),
         h: test_point(&env, 200),
         transfer_circuit,
@@ -830,6 +862,96 @@ fn real_withdraw_vk(env: &Env) -> VerificationKey {
     VerificationKey { alpha: alpha.into(), beta: beta.into(), gamma: gamma.into(), delta: delta.into(), ic }
 }
 
+// ── Fee tests ─────────────────────────────────────────────────────────────────
+
+fn setup_with_fees(deposit_fee_bps: i128, withdraw_fee_bps: i128, transfer_flat_fee: i128) -> Setup {
+    let env = Env::default();
+    env.cost_estimate().disable_resource_limits();
+    env.cost_estimate().budget().reset_unlimited();
+    env.mock_all_auths();
+    let mut r = rng();
+
+    let sac_admin = Address::generate(&env);
+    let sac = env.register_stellar_asset_contract_v2(sac_admin);
+    let token_id = sac.address();
+    let verifier_id = env.register(verifier_contract::WASM, ());
+    let transfer_circuit = setup_circuit::<11>(&mut r);
+    let withdraw_circuit = setup_circuit::<3>(&mut r);
+    let transfer_vk = vk_to_sdk(&env, &transfer_circuit.pk.vk);
+    let withdraw_vk = vk_to_sdk(&env, &withdraw_circuit.pk.vk);
+    let g = test_point(&env, 100);
+    let h = test_point(&env, 200);
+    let auditor_key = test_point(&env, 999);
+    let piilo_admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    let piilo_id = env.register(
+        Piilo,
+        (g.clone(), h.clone(), verifier_id, transfer_vk, withdraw_vk, token_id.clone(), auditor_key.clone(), piilo_admin, treasury.clone(), deposit_fee_bps, withdraw_fee_bps, transfer_flat_fee),
+    );
+    Setup { env, piilo_id, token_id, treasury, g, h, transfer_circuit, withdraw_circuit, auditor_key }
+}
+
+#[test]
+fn fee_is_charged_on_deposit() {
+    let s = setup_with_fees(100, 0, 0); // 100 bps = 1%
+    let client = PiiloClient::new(&s.env, &s.piilo_id);
+    let token_client = token::Client::new(&s.env, &s.token_id);
+    let alice = Address::generate(&s.env);
+    fund(&s.env, &s.token_id, &alice, 10_000);
+
+    client.deposit(&alice, &10_000, &blinding(&s.env, 1), &blinding(&s.env, 0));
+
+    assert_eq!(token_client.balance(&s.treasury), 100);
+    assert_eq!(client.get_vault_balance(), 9_900);
+    let expected = expected_commitment(&s.env, &s.g, &s.h, 9_900, 1);
+    assert_eq!(client.get_account(&alice).unwrap().balance_commitment, expected);
+}
+
+#[test]
+fn fee_is_charged_on_withdraw() {
+    let s = setup_with_fees(0, 100, 0); // 100 bps = 1%
+    let client = PiiloClient::new(&s.env, &s.piilo_id);
+    let token_client = token::Client::new(&s.env, &s.token_id);
+    let alice = Address::generate(&s.env);
+    fund(&s.env, &s.token_id, &alice, 10_000);
+
+    client.deposit(&alice, &10_000, &blinding(&s.env, 1), &blinding(&s.env, 0));
+    let balance = client.get_account(&alice).unwrap().balance_commitment;
+    let proof = withdraw_proof(&s, &balance, 10_000);
+    client.withdraw(&alice, &10_000, &proof);
+
+    // User gets 9_900 (10_000 - 1%), treasury gets 100.
+    assert_eq!(token_client.balance(&alice), 9_900);
+    assert_eq!(token_client.balance(&s.treasury), 100);
+    assert_eq!(client.get_vault_balance(), 0);
+}
+
+#[test]
+fn fee_is_charged_on_transfer() {
+    let s = setup_with_fees(0, 0, 50); // 50 stroop flat fee
+    let client = PiiloClient::new(&s.env, &s.piilo_id);
+    let token_client = token::Client::new(&s.env, &s.token_id);
+    let alice = Address::generate(&s.env);
+    let bob = Address::generate(&s.env);
+    fund(&s.env, &s.token_id, &alice, 1_000);
+    client.deposit(&alice, &100, &blinding(&s.env, 1), &blinding(&s.env, 0));
+
+    let balance = client.get_account(&alice).unwrap().balance_commitment;
+    let c_a = test_point(&s.env, 300);
+    let c_new = test_point(&s.env, 400);
+    let r_e = dummy_r_e(&s.env);
+    let a_enc_bytes = dummy_a_enc(&s.env);
+    let proof = transfer_proof(&s, &balance, &c_a, &c_new, &r_e, ArkFr::from(42u64));
+    let note = Bytes::from_array(&s.env, &[0u8; 4]);
+
+    client.transfer(&alice, &bob, &c_a, &c_new, &proof, &note, &r_e, &a_enc_bytes);
+
+    // 50 stroop flat fee from alice's public wallet → treasury.
+    assert_eq!(token_client.balance(&s.treasury), 50);
+    assert_eq!(token_client.balance(&alice), 850); // 1_000 - 100 deposit - 50 fee
+    assert_eq!(client.get_vault_balance(), 100);   // vault unaffected by flat fee
+}
+
 /// Proof from circuits/build/transfer_proof.json — generated by snarkjs from
 /// input_transfer.json (B=500, r_B=111, A=200, r_A=222, r_new=333).
 fn real_transfer_proof(env: &Env) -> Proof {
@@ -900,10 +1022,12 @@ fn real_circom_transfer_proof_is_accepted() {
     let withdraw_vk_placeholder = vk_to_sdk(&env, &setup_circuit::<3>(&mut r).pk.vk);
 
     let auditor_key_placeholder = test_point(&env, 999);
+    let piilo_admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
     let piilo_id = env.register(
         Piilo,
         (circuit_g(&env), circuit_h(&env), verifier_id,
-         real_transfer_vk(&env), withdraw_vk_placeholder, token_id.clone(), auditor_key_placeholder),
+         real_transfer_vk(&env), withdraw_vk_placeholder, token_id.clone(), auditor_key_placeholder, piilo_admin, treasury, 0i128, 0i128, 0i128),
     );
     let client = PiiloClient::new(&env, &piilo_id);
 
@@ -957,10 +1081,12 @@ fn real_circom_withdraw_proof_is_accepted() {
     let transfer_vk_placeholder = vk_to_sdk(&env, &setup_circuit::<11>(&mut r).pk.vk);
     let auditor_key_placeholder = test_point(&env, 999);
 
+    let piilo_admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
     let piilo_id = env.register(
         Piilo,
         (circuit_g(&env), circuit_h(&env), verifier_id,
-         transfer_vk_placeholder, real_withdraw_vk(&env), token_id.clone(), auditor_key_placeholder),
+         transfer_vk_placeholder, real_withdraw_vk(&env), token_id.clone(), auditor_key_placeholder, piilo_admin, treasury, 0i128, 0i128, 0i128),
     );
     let client = PiiloClient::new(&env, &piilo_id);
     let token_client = token::Client::new(&env, &token_id);

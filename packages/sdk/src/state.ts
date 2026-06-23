@@ -30,19 +30,21 @@ function addBlindMod(a: bigint, b: bigint): bigint {
   return (a + b) % JUBJUB_H_ORDER;
 }
 
-function storageKey(address: string): string {
-  return `piilo:state:${address}`;
+// asset symbol ("XLM", "USDC") keeps multi-token instances separate while
+// remaining stable across redeploys — contractId would reset on every deploy.
+function storageKey(address: string, asset: string): string {
+  return `piilo:state:${address}:${asset}`;
 }
 
-export function loadState(address: string): LocalState {
+export function loadState(address: string, asset: string): LocalState {
   if (typeof localStorage === "undefined") return { ...EMPTY, pendingNotes: [] };
-  const raw = localStorage.getItem(storageKey(address));
+  const raw = localStorage.getItem(storageKey(address, asset));
   if (!raw) return { ...EMPTY, pendingNotes: [] };
   const parsed = JSON.parse(raw);
   const rawR = BigInt(parsed.r);
   return {
     balance: BigInt(parsed.balance),
-    r: rawR % JUBJUB_H_ORDER,  // reduce to group order of H; handles unreduced integer sums
+    r: rawR % JUBJUB_H_ORDER,
     pendingNotes: (parsed.pendingNotes ?? []).map((n: { from: string; amount: string; r_A: string }) => ({
       from: n.from,
       amount: BigInt(n.amount),
@@ -51,10 +53,10 @@ export function loadState(address: string): LocalState {
   };
 }
 
-export function saveState(address: string, state: LocalState): void {
+export function saveState(address: string, asset: string, state: LocalState): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(
-    storageKey(address),
+    storageKey(address, asset),
     JSON.stringify({
       balance: state.balance.toString(),
       r: state.r.toString(),

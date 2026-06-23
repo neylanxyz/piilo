@@ -1,6 +1,6 @@
 {
   "generators": {
-    "address": 5,
+    "address": 7,
     "nonce": 0,
     "mux_id": 0
   },
@@ -35,7 +35,7 @@
               "function_name": "mint",
               "args": [
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                 },
                 {
                   "i128": "1000"
@@ -49,15 +49,15 @@
     ],
     [
       [
-        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM",
         {
           "function": {
             "contract_fn": {
-              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
               "function_name": "deposit",
               "args": [
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                 },
                 {
                   "i128": "100"
@@ -79,10 +79,10 @@
                   "function_name": "transfer",
                   "args": [
                     {
-                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                     },
                     {
-                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                     },
                     {
                       "i128": "100"
@@ -195,14 +195,14 @@
           "data": {
             "contract_data": {
               "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
               "key": {
                 "vec": [
                   {
                     "symbol": "Account"
                   },
                   {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                   }
                 ]
               },
@@ -289,14 +289,14 @@
           "data": {
             "contract_data": {
               "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
               "key": {
                 "vec": [
                   {
                     "symbol": "NotePubkey"
                   },
                   {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                   }
                 ]
               },
@@ -316,7 +316,7 @@
           "data": {
             "contract_data": {
               "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
               "key": "ledger_key_contract_instance",
               "durability": "persistent",
               "val": {
@@ -325,6 +325,18 @@
                     "wasm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                   },
                   "storage": [
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "Admin"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                      }
+                    },
                     {
                       "key": {
                         "vec": [
@@ -352,6 +364,18 @@
                             }
                           }
                         ]
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "DepositFeeBps"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "i128": "0"
                       }
                     },
                     {
@@ -416,12 +440,24 @@
                       "key": {
                         "vec": [
                           {
-                            "symbol": "NativeToken"
+                            "symbol": "Token"
                           }
                         ]
                       },
                       "val": {
                         "address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL"
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "TransferFlatFee"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "i128": "0"
                       }
                     },
                     {
@@ -518,6 +554,18 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "Treasury"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "VaultBalance"
                           }
                         ]
@@ -536,6 +584,18 @@
                       },
                       "val": {
                         "address": "CAJXGFIU32R2SF4BVXV2EB2XSSUPUBQMNXWJWB5GYS7WE76TFPPR7Q7P"
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "WithdrawFeeBps"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "i128": "0"
                       }
                     },
                     {
@@ -619,7 +679,7 @@
           "data": {
             "contract_data": {
               "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM",
               "key": {
                 "ledger_key_nonce": {
                   "nonce": "4837995959683129791"
@@ -669,7 +729,7 @@
                     "symbol": "Balance"
                   },
                   {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                   }
                 ]
               },
@@ -721,7 +781,7 @@
                     "symbol": "Balance"
                   },
                   {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                   }
                 ]
               },

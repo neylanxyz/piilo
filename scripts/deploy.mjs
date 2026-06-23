@@ -19,6 +19,13 @@ import { fileURLToPath }        from "url";
 import path                     from "path";
 import crypto                   from "crypto";
 
+// ── CLI args ──────────────────────────────────────────────────────────────────
+// Usage: node scripts/deploy.mjs [--symbol XLM] [--token-address C...]
+const argv = process.argv.slice(2);
+const argVal = (flag) => { const i = argv.indexOf(flag); return i >= 0 ? argv[i + 1] : null; };
+const TOKEN_SYMBOL  = argVal("--symbol") ?? "XLM";
+const TOKEN_ADDRESS = argVal("--token-address"); // explicit SAC address; auto-resolved if omitted
+
 // stellar-sdk lives in packages/sdk/node_modules — no root-level install needed.
 // v16 changed the layout: lib/index.js → lib/esm/index.js
 const SDK_PATH = new URL("../packages/sdk/node_modules/@stellar/stellar-sdk/lib/esm/index.js", import.meta.url).pathname;
@@ -44,12 +51,21 @@ const P_WASM = path.join(ROOT, "target/wasm32v1-none/release/piilo.optimized.was
 const VERIFIER_ID = "CAYIBC6P4XUCOJ2JOS6ND56DCHDOFVPZ6LLVAKFAN7Y3UWFNYIDXQZD4";
 log(`Verifier (pre-deployed): ${VERIFIER_ID}`);
 
-// ── 3. XLM SAC ────────────────────────────────────────────────────────────────
-log("\n── Resolving XLM SAC ──");
-const NATIVE_TOKEN = run(
-  "stellar contract id asset --asset native --network testnet"
-).trim();
-log(`XLM SAC: ${NATIVE_TOKEN}`);
+// ── 3. Token SAC ─────────────────────────────────────────────────────────────
+log(`\n── Resolving ${TOKEN_SYMBOL} token address ──`);
+let NATIVE_TOKEN;
+if (TOKEN_ADDRESS) {
+  NATIVE_TOKEN = TOKEN_ADDRESS;
+  log(`Using provided address: ${NATIVE_TOKEN}`);
+} else if (TOKEN_SYMBOL === "XLM") {
+  NATIVE_TOKEN = run("stellar contract id asset --asset native --network testnet").trim();
+  log(`XLM SAC: ${NATIVE_TOKEN}`);
+} else {
+  throw new Error(
+    `Unknown token symbol "${TOKEN_SYMBOL}". ` +
+    `Pass --token-address <SAC address> explicitly, or use --symbol XLM.`
+  );
+}
 
 // ── JubJub generators (needed before constructorArgs) ────────────────────────
 const G_X_HEX = "72fd4dce199fea0b4fdbed2812625078624bea8bebf24bde696fc7094e36a80b";
@@ -79,23 +95,45 @@ log(`\nPiilo contract ID (pre-computed): ${PIILO_ID}`);
 
 log("\n── Deploying piilo ──");
 const constructorArgs = [
-  encodePoint(G_X_HEX, G_Y_HEX),          // g: Point
-  encodePoint(H_X_HEX, H_Y_HEX),          // h: Point
-  new Address(VERIFIER_ID).toScVal(),      // verifier: Address
-  encodeVk(readVkJson("transfer")),        // transfer_vk: VerificationKey
-  encodeVk(readVkJson("withdraw")),        // withdraw_vk: VerificationKey
-  new Address(NATIVE_TOKEN).toScVal(),     // native_token: Address
-  encodePoint(K_AUD_X_HEX, K_AUD_Y_HEX), // auditor_key: Point (k_aud=12345678901234567890)
+  encodePoint(G_X_HEX, G_Y_HEX),               // g: Point
+  encodePoint(H_X_HEX, H_Y_HEX),               // h: Point
+  new Address(VERIFIER_ID).toScVal(),           // verifier: Address
+  encodeVk(readVkJson("transfer")),             // transfer_vk: VerificationKey
+  encodeVk(readVkJson("withdraw")),             // withdraw_vk: VerificationKey
+  new Address(NATIVE_TOKEN).toScVal(),          // native_token: Address
+  encodePoint(K_AUD_X_HEX, K_AUD_Y_HEX),      // auditor_key: Point
+  new Address(keypair.publicKey()).toScVal(),   // admin: Address (deployer)
+  new Address(keypair.publicKey()).toScVal(),   // treasury: Address (deployer for testnet)
+  encodeI128(10n),                              // deposit_fee_bps: 10 = 0.1%
+  encodeI128(30n),                              // withdraw_fee_bps: 30 = 0.3%
+  encodeI128(1_000_000n),                       // transfer_flat_fee: 0.1 XLM in stroops
 ];
 
 await deployWithConstructor(piiloHash, salt, constructorArgs);
 log(`Piilo deployed: ${PIILO_ID}`);
 
-// ── 5. Write .env ─────────────────────────────────────────────────────────────
+// ── 5. Update deployments.json ────────────────────────────────────────────────
+const deploymentsPath = path.join(ROOT, "packages/sdk/src/deployments.json");
+const deployments = JSON.parse(readFileSync(deploymentsPath, "utf8"));
+if (!deployments.testnet) deployments.testnet = {};
+deployments.testnet[TOKEN_SYMBOL] = PIILO_ID;
+writeFileSync(deploymentsPath, JSON.stringify(deployments, null, 2) + "\n");
+log(`\nUpdated ${deploymentsPath}: testnet.${TOKEN_SYMBOL} = ${PIILO_ID}`);
+
+// Also write a per-token .env for the frontend example
 const envPath = path.join(ROOT, "examples/confidential-wallet/.env");
-writeFileSync(envPath, `VITE_CONTRACT_ID=${PIILO_ID}\n`);
-log(`\nWrote ${envPath}`);
-log("Done — start frontend: cd packages/frontend && npm run dev");
+let envContent = "";
+try { envContent = readFileSync(envPath, "utf8"); } catch {}
+const envKey = `VITE_PIILO_${TOKEN_SYMBOL}`;
+const envLine = `${envKey}=${PIILO_ID}`;
+if (envContent.includes(envKey)) {
+  envContent = envContent.replace(new RegExp(`${envKey}=.*`), envLine);
+} else {
+  envContent += `${envLine}\n`;
+}
+writeFileSync(envPath, envContent);
+log(`Updated ${envPath}: ${envLine}`);
+log(`\nDone. To deploy another token: node scripts/deploy.mjs --symbol USDC --token-address <SAC>`);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Transaction helpers
@@ -164,6 +202,16 @@ function computeContractId(kp, salt) {
   );
   const hashBuf = crypto.createHash("sha256").update(preimage.toXDR()).digest();
   return StrKey.encodeContract(hashBuf);
+}
+
+function encodeI128(value) {
+  const bi = BigInt(value);
+  const hi = bi >> 64n;
+  const lo = bi & ((1n << 64n) - 1n);
+  return xdr.ScVal.scvI128(new xdr.Int128Parts({
+    hi: xdr.Int64.fromString(hi.toString()),
+    lo: xdr.Uint64.fromString(lo.toString()),
+  }));
 }
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }

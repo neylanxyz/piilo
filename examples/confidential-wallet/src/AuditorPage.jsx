@@ -1,8 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { PiiloStellar, decryptAuditorNote } from "@piilo/sdk";
+import { PiiloStellar, decryptAuditorNote, CONTRACT_IDS } from "@piilo/sdk";
 
-const CONTRACT_ID = import.meta.env.VITE_CONTRACT_ID ?? "";
+const CONTRACT_IDS_ENV = {
+  XLM:  import.meta.env.VITE_PIILO_XLM  ?? import.meta.env.VITE_CONTRACT_ID ?? undefined,
+  USDC: import.meta.env.VITE_PIILO_USDC ?? undefined,
+};
+const SUPPORTED_ASSETS = ["XLM", "USDC"];
 const NETWORK = "testnet";
+
+function contractId(asset) {
+  return CONTRACT_IDS_ENV[asset] ?? CONTRACT_IDS[NETWORK]?.[asset] ?? "";
+}
 
 function shortenAddr(addr) {
   if (!addr) return "";
@@ -11,17 +19,18 @@ function shortenAddr(addr) {
 
 const MAX_SANE_STROOPS = 500_000_000_000_000_000n;
 
-function xlmFmt(stroops) {
+function tokenFmt(stroops, symbol = "XLM") {
   if (stroops == null) return "—";
   const s = BigInt(stroops);
   if (s < 0n || s > MAX_SANE_STROOPS) return "? (wrong key)";
   const whole = s / 10_000_000n;
   const frac  = s % 10_000_000n;
   const fracStr = frac.toString().padStart(7, "0").replace(/0+$/, "");
-  return fracStr ? `${whole}.${fracStr} XLM` : `${whole} XLM`;
+  return fracStr ? `${whole}.${fracStr} ${symbol}` : `${whole} ${symbol}`;
 }
 
 export default function AuditorPage() {
+  const [asset, setAsset]               = useState("XLM");
   const [auditorKey, setAuditorKey]     = useState("");
   const [scanAddress, setScanAddress]   = useState("");
   const [auditResults, setAuditResults] = useState(null);
@@ -40,13 +49,14 @@ export default function AuditorPage() {
   }, [log]);
 
   async function handleScan() {
-    if (!CONTRACT_ID || !auditorKey || !scanAddress || scanning) return;
+    const cid = contractId(asset);
+    if (!cid || !auditorKey || !scanAddress || scanning) return;
     setScanning(true);
     setAuditResults(null);
-    emit("Scanning on-chain events…");
+    emit(`Scanning ${asset} contract for ${scanAddress.slice(0, 6)}…`);
     try {
       const kAud = BigInt(auditorKey.trim());
-      const stellar = new PiiloStellar(CONTRACT_ID, NETWORK);
+      const stellar = new PiiloStellar(cid, NETWORK);
       const events = await stellar.getTransferNotes(scanAddress, true);
       const results = events.map(({ from, r_e, a_enc }) => ({
         from,
@@ -64,7 +74,7 @@ export default function AuditorPage() {
     setScanning(false);
   }
 
-  const canScan = !scanning && !!CONTRACT_ID && !!auditorKey && !!scanAddress;
+  const canScan = !scanning && !!contractId(asset) && !!auditorKey && !!scanAddress;
 
   return (
     <main className="auditor-main">
@@ -79,6 +89,23 @@ export default function AuditorPage() {
       </div>
 
       <div className="auditor-grid">
+
+        {/* ── asset selector ── */}
+        <section className="card">
+          <h2>Token</h2>
+          <p className="card-desc">Select which Piilo token contract to audit.</p>
+          <div className="token-selector">
+            {SUPPORTED_ASSETS.map((a) => (
+              <button
+                key={a}
+                className={`token-tab ${asset === a ? "token-tab-active" : ""}`}
+                onClick={() => { setAsset(a); setAuditResults(null); }}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        </section>
 
         {/* ── credentials ── */}
         <section className="card card-auditor">
@@ -161,7 +188,7 @@ export default function AuditorPage() {
                   <span className="mono">{shortenAddr(scanAddress)}</span>
                   {" "}— total:{" "}
                   <span className="audit-total">
-                    {xlmFmt(auditResults.reduce((acc, r) => acc + (r.amount ?? 0n), 0n))}
+                    {tokenFmt(auditResults.reduce((acc, r) => acc + (r.amount ?? 0n), 0n), asset)}
                   </span>
                 </div>
                 <table className="audit-table">
@@ -178,7 +205,7 @@ export default function AuditorPage() {
                       <tr key={i}>
                         <td className="mono dim">{i + 1}</td>
                         <td className="mono">{shortenAddr(r.from)}</td>
-                        <td className="audit-amount">{xlmFmt(r.amount)}</td>
+                        <td className="audit-amount">{tokenFmt(r.amount, asset)}</td>
                         <td className="mono dim">{r.encryptedHex}</td>
                       </tr>
                     ))}
@@ -207,10 +234,10 @@ export default function AuditorPage() {
 
       </div>
 
-      {!CONTRACT_ID && (
+      {!contractId(asset) && (
         <div className="notice">
-          <strong>Contract not configured.</strong>{" "}
-          Add <code>VITE_CONTRACT_ID=C…</code> to <code>.env</code> to enable scanning.
+          <strong>No {asset} contract configured.</strong>{" "}
+          Run <code>node scripts/deploy.mjs{asset !== "XLM" ? ` --symbol ${asset} --token-address <SAC>` : ""}</code> to deploy.
         </div>
       )}
     </main>

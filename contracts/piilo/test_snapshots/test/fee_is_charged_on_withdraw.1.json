@@ -1,6 +1,6 @@
 {
   "generators": {
-    "address": 9,
+    "address": 7,
     "nonce": 0,
     "mux_id": 0
   },
@@ -38,7 +38,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                 },
                 {
-                  "i128": "1000"
+                  "i128": "10000"
                 }
               ]
             }
@@ -60,7 +60,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                 },
                 {
-                  "i128": "100"
+                  "i128": "10000"
                 },
                 {
                   "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
@@ -85,7 +85,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                     },
                     {
-                      "i128": "100"
+                      "i128": "10000"
                     }
                   ]
                 }
@@ -104,53 +104,13 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
-              "function_name": "transfer",
+              "function_name": "withdraw",
               "args": [
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                 },
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
-                },
-                {
-                  "map": [
-                    {
-                      "key": {
-                        "symbol": "x"
-                      },
-                      "val": {
-                        "bytes": "19fe64b6c5e5447287ef2a6a082ed8dbf551921152449dc54556c974e282d7ee"
-                      }
-                    },
-                    {
-                      "key": {
-                        "symbol": "y"
-                      },
-                      "val": {
-                        "bytes": "5c6046c7c07cd8815ab62340fc8484965040e547aaadc06ca34ca9357f63d67e"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "map": [
-                    {
-                      "key": {
-                        "symbol": "x"
-                      },
-                      "val": {
-                        "bytes": "2839782e1ad4295f219610edb853694b7c6f5216604c8af503683ba31c0af47d"
-                      }
-                    },
-                    {
-                      "key": {
-                        "symbol": "y"
-                      },
-                      "val": {
-                        "bytes": "3d4e393ae0b01783731ff6e2a804aa4c62291964a7d3859af8d9ffaf182cfaec"
-                      }
-                    }
-                  ]
+                  "i128": "10000"
                 },
                 {
                   "map": [
@@ -159,7 +119,7 @@
                         "symbol": "a"
                       },
                       "val": {
-                        "bytes": "13cd8aaa69e08c1532e524301e5ecfdfa7bc45a5dc48fe10270375afd70309e182900ec09340453752f89dd187283fe10f33813a258b9a151951467df13ef222804602ab386616ff3771b8f18f63dae38c19b3583a4b84b7865897ae31a89249"
+                        "bytes": "0766f232bd6e3546b0a3bf6789eaa4bf3010bab2cfcdd507c8f6599c28bf904e7fb5dec36c05c88c7ebef4448fcd83b411c2a685ebebf60765574bc52c54750dafc714c79b219740a2b0eddbfda329347c17e9bcb919fb2efed22ad880ae9232"
                       }
                     },
                     {
@@ -167,7 +127,7 @@
                         "symbol": "b"
                       },
                       "val": {
-                        "bytes": "07ed55a79c71c40c3c27697116fdbc56906d3b768330c1b5e63ac5e9babb0f52c023d42eb835e8dd1a31446cdf468f8c0f8804bdff5b1f41b95962f9302c50c39ce64c9223806aac387d63d86f7fcfc699db7de3a99c0731357b6003d35bab9313e1ce9be75c42d6989828820e05d41994cc2a88b79eaccf5a5ee5efe8e114ccd0e36be320b09b500ff8d34fed3d5dba047e67e8a8b87b0b1227341571463f1193021f1819ee6963fa424f86290ca93fcec0642e23d3a813f87babea4da5ad9a"
+                        "bytes": "18481f657b7eaa8180e828d8282d001c4d4621492c820839c0675789a32738be64c28c502b5cf41f10ac252eff337994141140f136e6e335cc09452323d2b715d0659ce3d543944a630f406850b7addd18b4ced3cae8e49e4a6799084be3e8cf0ee163c21fcabd71792c7e06d269f515e9389dc562a35f9a621797424ce6813b41290a517a30abfabe32d49187625c1413fcadbfe7b8db5a31babc2df4c83ffe643ae2d485ecf3ec81ba48a22d4cca13f7ec3bb7d6fa82a205adebd6b0b50825"
                       }
                     },
                     {
@@ -175,36 +135,10 @@
                         "symbol": "c"
                       },
                       "val": {
-                        "bytes": "0380648e1a7f56b1f92e3203ff1ab8bba524363bd0b809b9135276d65683dfdab2e9f04845a1046e0de78fb729eedc5d0ddcd35989aa4c0349809b3aefb88eb189beda9dc0fc6c7c0ca28e9dabba38c65d8d7e24886637fcdff3df07cec78763"
+                        "bytes": "0ef43bf087fd0684ed165d356384b0e3fb721552ea64e89ea1a1b7cee1429a9c84077f83f5d82210c335ce8f363fb776073a1bc2e9ebebd1b23593c82ee759b87f9b570d9cd6a3ec4d7c1e800306bc38dbf00eb3c27828d77b9fcead8794a9f4"
                       }
                     }
                   ]
-                },
-                {
-                  "bytes": "01010101"
-                },
-                {
-                  "map": [
-                    {
-                      "key": {
-                        "symbol": "x"
-                      },
-                      "val": {
-                        "bytes": "06da37841a9bf163d10b320f192331a49239f304cc08a1eb06f887b3cc2bd42a"
-                      }
-                    },
-                    {
-                      "key": {
-                        "symbol": "y"
-                      },
-                      "val": {
-                        "bytes": "265bcf9d431600db7507df8f121e40307fbd1d9dfd6e2bfc253e9b308d122dea"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "bytes": "000000000000000000000000000000000000000000000000000000000000002a"
                 }
               ]
             }
@@ -212,7 +146,10 @@
           "sub_invocations": []
         }
       ]
-    ]
+    ],
+    [],
+    [],
+    []
   ],
   "ledger": {
     "protocol_version": 25,
@@ -336,7 +273,7 @@
                             "symbol": "x"
                           },
                           "val": {
-                            "bytes": "2839782e1ad4295f219610edb853694b7c6f5216604c8af503683ba31c0af47d"
+                            "bytes": "0000000000000000000000000000000000000000000000000000000000000000"
                           }
                         },
                         {
@@ -344,7 +281,7 @@
                             "symbol": "y"
                           },
                           "val": {
-                            "bytes": "3d4e393ae0b01783731ff6e2a804aa4c62291964a7d3859af8d9ffaf182cfaec"
+                            "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
                           }
                         }
                       ]
@@ -409,100 +346,6 @@
               "key": {
                 "vec": [
                   {
-                    "symbol": "Account"
-                  },
-                  {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
-                  }
-                ]
-              },
-              "durability": "persistent",
-              "val": {
-                "map": [
-                  {
-                    "key": {
-                      "symbol": "balance_commitment"
-                    },
-                    "val": {
-                      "map": [
-                        {
-                          "key": {
-                            "symbol": "x"
-                          },
-                          "val": {
-                            "bytes": "0000000000000000000000000000000000000000000000000000000000000000"
-                          }
-                        },
-                        {
-                          "key": {
-                            "symbol": "y"
-                          },
-                          "val": {
-                            "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
-                          }
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "has_pending"
-                    },
-                    "val": {
-                      "bool": true
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "nonce"
-                    },
-                    "val": {
-                      "u64": "0"
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "pending_commitment"
-                    },
-                    "val": {
-                      "map": [
-                        {
-                          "key": {
-                            "symbol": "x"
-                          },
-                          "val": {
-                            "bytes": "19fe64b6c5e5447287ef2a6a082ed8dbf551921152449dc54556c974e282d7ee"
-                          }
-                        },
-                        {
-                          "key": {
-                            "symbol": "y"
-                          },
-                          "val": {
-                            "bytes": "5c6046c7c07cd8815ab62340fc8484965040e547aaadc06ca34ca9357f63d67e"
-                          }
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          },
-          "ext": "v0"
-        },
-        "live_until": 4095
-      },
-      {
-        "entry": {
-          "last_modified_ledger_seq": 0,
-          "data": {
-            "contract_data": {
-              "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
-              "key": {
-                "vec": [
-                  {
                     "symbol": "NotePubkey"
                   },
                   {
@@ -513,54 +356,6 @@
               "durability": "persistent",
               "val": {
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000000"
-              }
-            }
-          },
-          "ext": "v0"
-        },
-        "live_until": 4095
-      },
-      {
-        "entry": {
-          "last_modified_ledger_seq": 0,
-          "data": {
-            "contract_data": {
-              "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
-              "key": {
-                "vec": [
-                  {
-                    "symbol": "PendingNotes"
-                  },
-                  {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
-                  }
-                ]
-              },
-              "durability": "persistent",
-              "val": {
-                "vec": [
-                  {
-                    "map": [
-                      {
-                        "key": {
-                          "symbol": "encrypted_note"
-                        },
-                        "val": {
-                          "bytes": "01010101"
-                        }
-                      },
-                      {
-                        "key": {
-                          "symbol": "from"
-                        },
-                        "val": {
-                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
-                        }
-                      }
-                    ]
-                  }
-                ]
               }
             }
           },
@@ -610,7 +405,7 @@
                               "symbol": "x"
                             },
                             "val": {
-                              "bytes": "71d566034f9798311711ae45d36b76bb0ca109d662ff23f9d5ca979fee801897"
+                              "bytes": "2ec96f1858b8ba394325e97263029177901245d2549346f6ee7dfc7ab6e5b061"
                             }
                           },
                           {
@@ -618,7 +413,7 @@
                               "symbol": "y"
                             },
                             "val": {
-                              "bytes": "0000000000000000000000000000000000000000000000000000000000000003"
+                              "bytes": "3c7fada8b6c7375e4ecb26c1bf4b1a525a4ccf0f8b3e2f7f38350a3b68395aac"
                             }
                           }
                         ]
@@ -829,7 +624,7 @@
                         ]
                       },
                       "val": {
-                        "i128": "100"
+                        "i128": "0"
                       }
                     },
                     {
@@ -853,7 +648,7 @@
                         ]
                       },
                       "val": {
-                        "i128": "0"
+                        "i128": "100"
                       }
                     },
                     {
@@ -1007,7 +802,7 @@
                     "symbol": "Balance"
                   },
                   {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                   }
                 ]
               },
@@ -1059,6 +854,58 @@
                     "symbol": "Balance"
                   },
                   {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "map": [
+                  {
+                    "key": {
+                      "symbol": "amount"
+                    },
+                    "val": {
+                      "i128": "0"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "authorized"
+                    },
+                    "val": {
+                      "bool": true
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "clawback"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 518400
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+              "key": {
+                "vec": [
+                  {
+                    "symbol": "Balance"
+                  },
+                  {
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                   }
                 ]
@@ -1071,7 +918,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "900"
+                      "i128": "9900"
                     }
                   },
                   {
@@ -1248,84 +1095,5 @@
       }
     ]
   },
-  "events": [
-    {
-      "event": {
-        "ext": "v0",
-        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
-        "type_": "contract",
-        "body": {
-          "v0": {
-            "topics": [
-              {
-                "symbol": "transfer"
-              }
-            ],
-            "data": {
-              "map": [
-                {
-                  "key": {
-                    "symbol": "a_enc"
-                  },
-                  "val": {
-                    "bytes": "000000000000000000000000000000000000000000000000000000000000002a"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "encrypted_note"
-                  },
-                  "val": {
-                    "bytes": "01010101"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "from"
-                  },
-                  "val": {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "r_e"
-                  },
-                  "val": {
-                    "map": [
-                      {
-                        "key": {
-                          "symbol": "x"
-                        },
-                        "val": {
-                          "bytes": "06da37841a9bf163d10b320f192331a49239f304cc08a1eb06f887b3cc2bd42a"
-                        }
-                      },
-                      {
-                        "key": {
-                          "symbol": "y"
-                        },
-                        "val": {
-                          "bytes": "265bcf9d431600db7507df8f121e40307fbd1d9dfd6e2bfc253e9b308d122dea"
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "to"
-                  },
-                  "val": {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
-                  }
-                }
-              ]
-            }
-          }
-        }
-      },
-      "failed_call": false
-    }
-  ]
+  "events": []
 }
