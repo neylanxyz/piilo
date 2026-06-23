@@ -40,8 +40,7 @@ export function Landing() {
           <p className="hero-sub" dangerouslySetInnerHTML={{ __html: t('hero.sub') }} />
           <div className="hero-ctas">
             <a href="/docs/introduction.html" className="btn btn-primary">{t('hero.cta.primary')}</a>
-            <a href="/examples/confidential-wallet/index.html" className="btn btn-ghost">{t('hero.cta.secondary')}</a>
-            <a href="/examples/confidential-payroll/index.html" className="btn btn-ghost">{t('hero.cta.payroll')}</a>
+            <a href="#examples" className="btn btn-ghost">{t('hero.cta.secondary')}</a>
           </div>
           <div className="hero-stat-strip">
             <div className="stat">

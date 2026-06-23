@@ -1,12 +1,34 @@
 const en = {
-  'nav.docs':   'Docs',
-  'nav.github': 'GitHub',
+  'nav.docs':      'Docs',
+  'nav.examples':  'Examples',
+  'nav.github':    'GitHub',
 
   'hero.headline':      'Private payments<br>on Stellar.',
   'hero.sub':           'ZK proofs generated in your browser. Balances stored as <strong>Pedersen commitments</strong> — the chain sees a point on a curve, not a number. Works with XLM and USDC.',
   'hero.cta.primary':   'Read the Docs',
-  'hero.cta.secondary': 'Try the Wallet',
+  'hero.cta.secondary': 'See Examples →',
   'hero.cta.payroll':   'Try Payroll Demo',
+
+  'examples.h1':  'Live demos<br>on Stellar Testnet.',
+  'examples.sub': 'Connect Freighter, fund a testnet account, and try confidential payments for real. No setup required.',
+
+  'examples.wallet.title': 'Confidential Wallet',
+  'examples.wallet.desc':  'Single-user demo of the full privacy lifecycle: deposit, transfer privately, settle incoming transfers, and withdraw.',
+  'examples.wallet.f1':    'Deposit XLM or USDC',
+  'examples.wallet.f2':    'Send with ZK proof — amount hidden on-chain',
+  'examples.wallet.f3':    'Receive and settle incoming transfers',
+  'examples.wallet.f4':    'Auditor console to decrypt amounts',
+  'examples.wallet.cta':   'Launch wallet →',
+
+  'examples.payroll.title': 'Confidential Payroll',
+  'examples.payroll.desc':  'Multi-recipient payroll run: add employees, set amounts, and send all transfers privately in one click.',
+  'examples.payroll.f1':    'Add recipients with name and address',
+  'examples.payroll.f2':    'Set per-recipient amounts in XLM or USDC',
+  'examples.payroll.f3':    'Run payroll — transfers execute sequentially',
+  'examples.payroll.f4':    'Live per-row status during the run',
+  'examples.payroll.cta':   'Launch payroll →',
+
+  'examples.note': 'Both demos use Stellar Testnet contracts. Get testnet XLM from the Stellar Friendbot, and testnet USDC from the USDC testnet issuer.',
 
   'how.h2':          'Public entry.<br>Private interior.',
   'how.step1.id':    'Deposit',

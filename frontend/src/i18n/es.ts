@@ -1,14 +1,36 @@
 import type { I18nKey } from './en'
 
 const es: Record<I18nKey, string> = {
-  'nav.docs':   'Docs',
-  'nav.github': 'GitHub',
+  'nav.docs':     'Docs',
+  'nav.examples': 'Ejemplos',
+  'nav.github':   'GitHub',
 
   'hero.headline':      'Pagos privados<br>en Stellar.',
   'hero.sub':           'Pruebas ZK generadas en tu navegador. Saldos almacenados como <strong>compromisos Pedersen</strong> — la red ve un punto en una curva, no un número. Compatible con XLM y USDC.',
   'hero.cta.primary':   'Leer la documentación',
-  'hero.cta.secondary': 'Probar la cartera',
+  'hero.cta.secondary': 'Ver ejemplos →',
   'hero.cta.payroll':   'Demo de nómina',
+
+  'examples.h1':  'Demos en vivo<br>en Stellar Testnet.',
+  'examples.sub': 'Conecta Freighter, financia una cuenta testnet y prueba los pagos confidenciales de verdad. Sin configuración necesaria.',
+
+  'examples.wallet.title': 'Cartera Confidencial',
+  'examples.wallet.desc':  'Demo individual del ciclo completo de privacidad: depositar, transferir de forma privada, liquidar transferencias recibidas y retirar.',
+  'examples.wallet.f1':    'Depositar XLM o USDC',
+  'examples.wallet.f2':    'Enviar con prueba ZK — monto oculto on-chain',
+  'examples.wallet.f3':    'Recibir y liquidar transferencias entrantes',
+  'examples.wallet.f4':    'Consola de auditoría para descifrar montos',
+  'examples.wallet.cta':   'Abrir cartera →',
+
+  'examples.payroll.title': 'Nómina Confidencial',
+  'examples.payroll.desc':  'Ejecución de nómina para múltiples destinatarios: agrega empleados, establece montos y envía todas las transferencias de forma privada con un clic.',
+  'examples.payroll.f1':    'Agregar destinatarios con nombre y dirección',
+  'examples.payroll.f2':    'Establecer montos por destinatario en XLM o USDC',
+  'examples.payroll.f3':    'Ejecutar nómina — transferencias secuenciales',
+  'examples.payroll.f4':    'Estado en vivo por fila durante la ejecución',
+  'examples.payroll.cta':   'Abrir nómina →',
+
+  'examples.note': 'Ambas demos usan contratos de Stellar Testnet. Obtén XLM testnet del Stellar Friendbot y USDC testnet del emissor USDC testnet.',
 
   'how.h2':          'Entrada pública.<br>Interior privado.',
   'how.step1.id':    'Depositar',

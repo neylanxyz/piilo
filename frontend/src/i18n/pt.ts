@@ -1,14 +1,36 @@
 import type { I18nKey } from './en'
 
 const pt: Record<I18nKey, string> = {
-  'nav.docs':   'Docs',
-  'nav.github': 'GitHub',
+  'nav.docs':     'Docs',
+  'nav.examples': 'Exemplos',
+  'nav.github':   'GitHub',
 
   'hero.headline':      'Pagamentos privados<br>na Stellar.',
   'hero.sub':           'Provas ZK geradas no seu navegador. Saldos armazenados como <strong>compromissos Pedersen</strong> — a rede vê um ponto em uma curva, não um número. Funciona com XLM e USDC.',
   'hero.cta.primary':   'Ler a documentação',
-  'hero.cta.secondary': 'Experimentar a carteira',
+  'hero.cta.secondary': 'Ver exemplos →',
   'hero.cta.payroll':   'Demo de folha de pagamento',
+
+  'examples.h1':  'Demos ao vivo<br>na Stellar Testnet.',
+  'examples.sub': 'Conecte o Freighter, financie uma conta testnet e experimente pagamentos confidenciais de verdade. Sem configuração necessária.',
+
+  'examples.wallet.title': 'Carteira Confidencial',
+  'examples.wallet.desc':  'Demo individual do ciclo completo de privacidade: depositar, transferir com privacidade, liquidar transferências recebidas e sacar.',
+  'examples.wallet.f1':    'Depositar XLM ou USDC',
+  'examples.wallet.f2':    'Enviar com prova ZK — valor oculto on-chain',
+  'examples.wallet.f3':    'Receber e liquidar transferências recebidas',
+  'examples.wallet.f4':    'Console de auditoria para descriptografar valores',
+  'examples.wallet.cta':   'Abrir carteira →',
+
+  'examples.payroll.title': 'Folha de Pagamento Confidencial',
+  'examples.payroll.desc':  'Execução de folha de pagamento para múltiplos destinatários: adicione funcionários, defina valores e envie todas as transferências com privacidade em um clique.',
+  'examples.payroll.f1':    'Adicionar destinatários com nome e endereço',
+  'examples.payroll.f2':    'Definir valores por destinatário em XLM ou USDC',
+  'examples.payroll.f3':    'Executar folha — transferências executadas sequencialmente',
+  'examples.payroll.f4':    'Status ao vivo por linha durante a execução',
+  'examples.payroll.cta':   'Abrir folha de pagamento →',
+
+  'examples.note': 'Ambas as demos usam contratos da Stellar Testnet. Obtenha XLM testnet do Stellar Friendbot e USDC testnet do emissor USDC testnet.',
 
   'how.h2':          'Entrada pública.<br>Interior privado.',
   'how.step1.id':    'Depositar',
