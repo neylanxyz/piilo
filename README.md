@@ -107,14 +107,15 @@ piilo/
   circuits/
     transfer.circom       — balance-update proof
     withdraw.circom       — balance-reveal proof
-    build/                — compiled R1CS, WASM, zkey (generated)
+    build/                — compiled R1CS, WASM, zkey (committed)
   contracts/
     piilo/                — main Soroban contract
     verifier/             — Groth16/BLS12-381 verifier (ported from stellar/soroban-examples)
   packages/
     sdk/                  — @piilo/sdk (TypeScript)
   examples/
-    confidential-wallet/  — React demo app
+    confidential-wallet/  — single-user wallet demo
+    confidential-payroll/ — multi-recipient private payroll demo
   scripts/
     deploy.mjs            — deploy any token to testnet/mainnet
 ```
@@ -128,14 +129,30 @@ piilo/
 npm install
 cargo build
 
-# Start the demo wallet (testnet contracts already deployed)
-cd examples/confidential-wallet
-npm run dev
+# Confidential wallet
+cd examples/confidential-wallet && npm run dev
+
+# Confidential payroll
+cd examples/confidential-payroll && npm run dev
 ```
 
 Open `http://localhost:5173`, connect Freighter (set to Testnet), and deposit XLM or USDC.
 
-To deploy your own contract instance:
+Circuit WASM and zkey files are committed to the repo — no Circom installation needed to run the demos.
+
+---
+
+## Deploying to Vercel
+
+The wallet demo deploys with zero config:
+
+```bash
+vercel --cwd examples/confidential-wallet
+```
+
+Or connect the repo to Vercel — `vercel.json` at the root points to `examples/confidential-wallet`. Circuit files (~20 MB total) are copied into the build output automatically by the Vite config's `buildStart` hook.
+
+To deploy your own contract instance first:
 
 ```bash
 # XLM
