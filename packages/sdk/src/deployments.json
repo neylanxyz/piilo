@@ -1,4 +1,6 @@
 {
-  "testnet": {},
+  "testnet": {
+    "XLM": "CASX2A753HCDILRVLCDTF7FBURMTSZQNEJJSV7IVGQOKS7DHW457QHFC"
+  },
   "mainnet": {}
 }
