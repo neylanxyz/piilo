@@ -30,14 +30,15 @@ function addBlindMod(a: bigint, b: bigint): bigint {
   return (a + b) % JUBJUB_H_ORDER;
 }
 
-// contractId is included so XLM and USDC instances for the same wallet don't collide.
-function storageKey(address: string, contractId: string): string {
-  return `piilo:state:${address}:${contractId}`;
+// asset symbol ("XLM", "USDC") keeps multi-token instances separate while
+// remaining stable across redeploys — contractId would reset on every deploy.
+function storageKey(address: string, asset: string): string {
+  return `piilo:state:${address}:${asset}`;
 }
 
-export function loadState(address: string, contractId: string): LocalState {
+export function loadState(address: string, asset: string): LocalState {
   if (typeof localStorage === "undefined") return { ...EMPTY, pendingNotes: [] };
-  const raw = localStorage.getItem(storageKey(address, contractId));
+  const raw = localStorage.getItem(storageKey(address, asset));
   if (!raw) return { ...EMPTY, pendingNotes: [] };
   const parsed = JSON.parse(raw);
   const rawR = BigInt(parsed.r);
@@ -52,10 +53,10 @@ export function loadState(address: string, contractId: string): LocalState {
   };
 }
 
-export function saveState(address: string, contractId: string, state: LocalState): void {
+export function saveState(address: string, asset: string, state: LocalState): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(
-    storageKey(address, contractId),
+    storageKey(address, asset),
     JSON.stringify({
       balance: state.balance.toString(),
       r: state.r.toString(),
