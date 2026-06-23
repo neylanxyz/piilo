@@ -460,7 +460,7 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              {fees?.transferFlatFee > 0n && (
+              {fees != null && fees.transferFlatFee > 0n && (
                 <div className="fee-hint">
                   Flat fee {tokenFmt(fees.transferFlatFee, asset)} charged from your public wallet
                 </div>
