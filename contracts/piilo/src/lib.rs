@@ -21,7 +21,7 @@ pub enum DataKey {
     Verifier,
     TransferVk,
     WithdrawVk,
-    NativeToken,
+    Token,
     VaultBalance,
     AuditorKey,
     Admin,
@@ -173,7 +173,7 @@ impl Piilo {
         verifier: Address,
         transfer_vk: VerificationKey,
         withdraw_vk: VerificationKey,
-        native_token: Address,
+        token: Address,
         auditor_key: Point,
         admin: Address,
         treasury: Address,
@@ -186,7 +186,7 @@ impl Piilo {
         env.storage().instance().set(&DataKey::Verifier, &verifier);
         env.storage().instance().set(&DataKey::TransferVk, &transfer_vk);
         env.storage().instance().set(&DataKey::WithdrawVk, &withdraw_vk);
-        env.storage().instance().set(&DataKey::NativeToken, &native_token);
+        env.storage().instance().set(&DataKey::Token, &token);
         env.storage().instance().set(&DataKey::VaultBalance, &0i128);
         env.storage().instance().set(&DataKey::AuditorKey, &auditor_key);
         env.storage().instance().set(&DataKey::Admin, &admin);
@@ -208,14 +208,14 @@ impl Piilo {
             return Err(PiiloError::InvalidAmount);
         }
 
-        let native_token: Address = env.storage().instance().get(&DataKey::NativeToken).unwrap();
-        token::Client::new(&env, &native_token).transfer(&user, &env.current_contract_address(), &amount);
+        let token: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        token::Client::new(&env, &token).transfer(&user, &env.current_contract_address(), &amount);
 
         let fee_bps: i128 = env.storage().instance().get(&DataKey::DepositFeeBps).unwrap_or(0);
         let fee = amount * fee_bps / 10_000;
         if fee > 0 {
             let treasury: Address = env.storage().instance().get(&DataKey::Treasury).unwrap();
-            token::Client::new(&env, &native_token).transfer(&env.current_contract_address(), &treasury, &fee);
+            token::Client::new(&env, &token).transfer(&env.current_contract_address(), &treasury, &fee);
         }
         let credited = amount - fee;
 
@@ -275,8 +275,8 @@ impl Piilo {
         let flat_fee: i128 = env.storage().instance().get(&DataKey::TransferFlatFee).unwrap_or(0);
         if flat_fee > 0 {
             let treasury: Address = env.storage().instance().get(&DataKey::Treasury).unwrap();
-            let native_token: Address = env.storage().instance().get(&DataKey::NativeToken).unwrap();
-            token::Client::new(&env, &native_token).transfer(&sender, &treasury, &flat_fee);
+            let token: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+            token::Client::new(&env, &token).transfer(&sender, &treasury, &flat_fee);
         }
 
         let auditor_key: Point = env.storage().instance().get(&DataKey::AuditorKey).unwrap();
@@ -379,11 +379,11 @@ impl Piilo {
         let fee = amount * fee_bps / 10_000;
         let payout = amount - fee;
 
-        let native_token: Address = env.storage().instance().get(&DataKey::NativeToken).unwrap();
-        token::Client::new(&env, &native_token).transfer(&env.current_contract_address(), &user, &payout);
+        let token: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        token::Client::new(&env, &token).transfer(&env.current_contract_address(), &user, &payout);
         if fee > 0 {
             let treasury: Address = env.storage().instance().get(&DataKey::Treasury).unwrap();
-            token::Client::new(&env, &native_token).transfer(&env.current_contract_address(), &treasury, &fee);
+            token::Client::new(&env, &token).transfer(&env.current_contract_address(), &treasury, &fee);
         }
 
         WithdrawEvent { user, amount, payout, fee }.publish(&env);
@@ -392,6 +392,10 @@ impl Piilo {
 
     pub fn get_account(env: Env, user: Address) -> Option<ConfidentialAccount> {
         env.storage().persistent().get(&DataKey::Account(user))
+    }
+
+    pub fn get_token(env: Env) -> Address {
+        env.storage().instance().get(&DataKey::Token).unwrap()
     }
 
     pub fn get_auditor_key(env: Env) -> Point {

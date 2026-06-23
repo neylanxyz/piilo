@@ -8,6 +8,7 @@
 //   await piilo.settleIfPending()
 //   await piilo.withdraw()
 
+import deployments from "./deployments.json" with { type: "json" };
 import {
   loadState, saveState,
   applyDeposit, applySend, applyReceiveNote, applySettle,
@@ -41,29 +42,36 @@ function pointFromHex(x: string, y: string): JubJubPoint {
   return [normalise(x), normalise(y)];
 }
 
-// Canonical deployed contract addresses. contractId in PiiloConfig is optional;
-// if omitted the SDK uses this for the configured network.
-export const CONTRACT_IDS: Record<Network, string> = {
-  testnet: "", // filled after each deploy — see scripts/deploy.mjs
-  mainnet: "", // TBD
-};
+// Canonical deployed Piilo contract addresses, keyed by network then token symbol.
+// Updated automatically by scripts/deploy.mjs after each deploy.
+// Use asset: "XLM" (default) or asset: "USDC" in PiiloConfig to select.
+export const CONTRACT_IDS: Record<Network, Record<string, string>> = deployments as Record<Network, Record<string, string>>;
 
 export interface PiiloConfig {
   network: Network;
-  contractId?: string; // optional — defaults to CONTRACT_IDS[network]
+  asset?: string;      // token symbol: "XLM" (default), "USDC", etc.
+  contractId?: string; // explicit override — takes precedence over asset lookup
   wallet: WalletAdapter & WalletSigner;
-  relayUrl?: string; // optional — only for fee sponsorship, holds no secrets
+  relayUrl?: string;
 }
 
 export class Piilo {
   private cfg: PiiloConfig;
   private stellar: PiiloStellar;
+  private contractId: string;
   private noteKeypair: NoteKeypair | null = null;
 
   constructor(cfg: PiiloConfig) {
     this.cfg = cfg;
-    const contractId = cfg.contractId ?? CONTRACT_IDS[cfg.network];
-    if (!contractId) throw new Error(`No contract deployed on ${cfg.network} yet — pass contractId explicitly`);
+    const asset = cfg.asset ?? "XLM";
+    const contractId = cfg.contractId ?? CONTRACT_IDS[cfg.network]?.[asset];
+    if (!contractId) {
+      throw new Error(
+        `No Piilo contract deployed for ${asset} on ${cfg.network} yet — ` +
+        `run scripts/deploy.mjs --symbol ${asset} or pass contractId explicitly`
+      );
+    }
+    this.contractId = contractId;
     this.stellar = new PiiloStellar(contractId, cfg.network);
   }
 
@@ -84,7 +92,7 @@ export class Piilo {
   /** Current local plaintext balance. Does not require a network call. */
   async getBalance(): Promise<bigint> {
     const address = await this.myAddress();
-    return loadState(address).balance;
+    return loadState(address, this.contractId).balance;
   }
 
   /**
@@ -104,8 +112,8 @@ export class Piilo {
 
     await this.stellar.deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
 
-    const state = loadState(address);
-    saveState(address, applyDeposit(state, credited, r));
+    const state = loadState(address, this.contractId);
+    saveState(address, this.contractId,applyDeposit(state, credited, r));
   }
 
   /**
@@ -114,7 +122,7 @@ export class Piilo {
    */
   async transfer({ to, amount }: { to: string; amount: bigint }): Promise<void> {
     const address = await this.myAddress();
-    const state = loadState(address);
+    const state = loadState(address, this.contractId);
 
     if (amount <= 0n) throw new Error("amount must be positive");
     if (amount > state.balance) throw new Error("insufficient balance");
@@ -159,7 +167,7 @@ export class Piilo {
       a_enc
     );
 
-    saveState(address, applySend(state, amount, r_new));
+    saveState(address, this.contractId,applySend(state, amount, r_new));
   }
 
   /**
@@ -177,13 +185,13 @@ export class Piilo {
 
     await this.stellar.settlePending(this.cfg.wallet);
 
-    const state = loadState(address);
+    const state = loadState(address, this.contractId);
     const withNotes = notes.reduce(
       (s, n) => applyReceiveNote(s, n),
       state
     );
     const settled = applySettle(withNotes);
-    saveState(address, settled);
+    saveState(address, this.contractId,settled);
 
     const received = notes.reduce((s, n) => s + n.amount, 0n);
     return { received };
@@ -195,7 +203,7 @@ export class Piilo {
    */
   async withdraw(): Promise<{ payout: bigint }> {
     const address = await this.myAddress();
-    const state = loadState(address);
+    const state = loadState(address, this.contractId);
 
     if (state.balance <= 0n) throw new Error("no balance to withdraw");
 
@@ -218,14 +226,14 @@ export class Piilo {
 
     await this.stellar.withdraw(this.cfg.wallet, state.balance, proof);
 
-    saveState(address, { balance: 0n, r: 0n, pendingNotes: [] });
+    saveState(address, this.contractId,{ balance: 0n, r: 0n, pendingNotes: [] });
     return { payout };
   }
 
   /** Export local state (balance + blinding factor) as a JSON string. */
   async exportBackup(): Promise<string> {
     const address = await this.myAddress();
-    const state = loadState(address);
+    const state = loadState(address, this.contractId);
     return JSON.stringify({
       version: 1,
       address,
@@ -257,7 +265,7 @@ export class Piilo {
     if (cx !== onX || cy !== onY)
       throw new Error("Backup does not match on-chain commitment — wrong balance or blinding factor");
 
-    saveState(address, { balance, r, pendingNotes: [] });
+    saveState(address, this.contractId,{ balance, r, pendingNotes: [] });
     return { balance };
   }
 
