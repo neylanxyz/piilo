@@ -41,6 +41,7 @@ export function Landing() {
           <div className="hero-ctas">
             <a href="/docs/introduction.html" className="btn btn-primary">{t('hero.cta.primary')}</a>
             <a href="/examples/confidential-wallet/index.html" className="btn btn-ghost">{t('hero.cta.secondary')}</a>
+            <a href="/examples/confidential-payroll/index.html" className="btn btn-ghost">{t('hero.cta.payroll')}</a>
           </div>
           <div className="hero-stat-strip">
             <div className="stat">
@@ -52,8 +53,12 @@ export function Landing() {
               <div className="stat-label">commitment curve</div>
             </div>
             <div className="stat">
-              <div className="stat-val">4 methods</div>
-              <div className="stat-label">full lifecycle</div>
+              <div className="stat-val">XLM + USDC</div>
+              <div className="stat-label">multi-token</div>
+            </div>
+            <div className="stat">
+              <div className="stat-val">auditor</div>
+              <div className="stat-label">compliance hook</div>
             </div>
           </div>
         </div>
@@ -116,9 +121,9 @@ export function Landing() {
               <span className="kw">const</span>{' '}<span className="id">piilo</span>{' '}
               <span className="kw">=</span>{' '}<span className="kw">new</span>{' '}
               <span className="ac">Piilo</span>{'({\n'}
-              {'  network:    '}<span className="st">"testnet"</span>{',\n'}
-              {'  contractId: '}<span className="st">"C…"</span>{',\n'}
-              {'  wallet,                 '}<span className="cm">{'// WalletAdapter'}</span>{'\n'}
+              {'  network: '}<span className="st">"testnet"</span>{',\n'}
+              {'  asset:   '}<span className="st">"XLM"</span>{',' }<span className="cm">{'  // or "USDC"'}</span>{'\n'}
+              {'  wallet,  '}<span className="cm">{'  // WalletAdapter'}</span>{'\n'}
               {'})\n\n'}
               <span className="cm">{'// 2. deposit XLM (amount is visible once)'}</span>{'\n'}
               <span className="kw">await</span>{' piilo.'}<span className="mt">deposit</span>{'('}
@@ -198,6 +203,17 @@ export function Landing() {
               verification happens inside Soroban execution — there are no external oracle
               calls or trusted relayers. The verifier passes Stellar's published test vectors.
               <span className="spec-detail">contracts/piilo/src/lib.rs · contracts/verifier/src/lib.rs</span>
+            </div>
+          </div>
+
+          <div className="spec-row reveal rd5">
+            <div className="spec-term">
+              {t('spec.auditor.term')}
+              <span className="spec-term-sub">{t('spec.auditor.sub')}</span>
+            </div>
+            <div className="spec-def">
+              {t('spec.auditor.def')}
+              <span className="spec-detail">packages/sdk/src/auditor.ts · examples/confidential-wallet/src/AuditorPage.jsx</span>
             </div>
           </div>
         </div>
