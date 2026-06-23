@@ -24,6 +24,11 @@ pub enum DataKey {
     NativeToken,
     VaultBalance,
     AuditorKey,
+    Admin,
+    Treasury,
+    DepositFeeBps,
+    WithdrawFeeBps,
+    TransferFlatFee,
     Account(Address),
     NotePubkey(Address),
     PendingNotes(Address),
@@ -59,7 +64,8 @@ pub enum PiiloError {
 #[contractevent(topics = ["deposit"])]
 pub struct DepositEvent {
     pub user: Address,
-    pub amount: i128,
+    pub amount: i128, // credited (after fee)
+    pub fee: i128,
 }
 
 #[contractevent(topics = ["transfer"])]
@@ -84,7 +90,9 @@ pub struct SettleEvent {
 #[contractevent(topics = ["withdraw"])]
 pub struct WithdrawEvent {
     pub user: Address,
-    pub amount: i128,
+    pub amount: i128,  // proved amount (full)
+    pub payout: i128,  // net to user after fee
+    pub fee: i128,
 }
 
 const TTL_THRESHOLD: u32 = 100;
@@ -167,17 +175,25 @@ impl Piilo {
         withdraw_vk: VerificationKey,
         native_token: Address,
         auditor_key: Point,
+        admin: Address,
+        treasury: Address,
+        deposit_fee_bps: i128,
+        withdraw_fee_bps: i128,
+        transfer_flat_fee: i128,
     ) {
         env.storage().instance().set(&DataKey::G, &g);
         env.storage().instance().set(&DataKey::H, &h);
         env.storage().instance().set(&DataKey::Verifier, &verifier);
         env.storage().instance().set(&DataKey::TransferVk, &transfer_vk);
         env.storage().instance().set(&DataKey::WithdrawVk, &withdraw_vk);
-        env.storage()
-            .instance()
-            .set(&DataKey::NativeToken, &native_token);
+        env.storage().instance().set(&DataKey::NativeToken, &native_token);
         env.storage().instance().set(&DataKey::VaultBalance, &0i128);
         env.storage().instance().set(&DataKey::AuditorKey, &auditor_key);
+        env.storage().instance().set(&DataKey::Admin, &admin);
+        env.storage().instance().set(&DataKey::Treasury, &treasury);
+        env.storage().instance().set(&DataKey::DepositFeeBps, &deposit_fee_bps);
+        env.storage().instance().set(&DataKey::WithdrawFeeBps, &withdraw_fee_bps);
+        env.storage().instance().set(&DataKey::TransferFlatFee, &transfer_flat_fee);
     }
 
     /// User sends `amount` of the native asset into the vault and supplies
@@ -195,9 +211,17 @@ impl Piilo {
         let native_token: Address = env.storage().instance().get(&DataKey::NativeToken).unwrap();
         token::Client::new(&env, &native_token).transfer(&user, &env.current_contract_address(), &amount);
 
+        let fee_bps: i128 = env.storage().instance().get(&DataKey::DepositFeeBps).unwrap_or(0);
+        let fee = amount * fee_bps / 10_000;
+        if fee > 0 {
+            let treasury: Address = env.storage().instance().get(&DataKey::Treasury).unwrap();
+            token::Client::new(&env, &native_token).transfer(&env.current_contract_address(), &treasury, &fee);
+        }
+        let credited = amount - fee;
+
         let g: Point = env.storage().instance().get(&DataKey::G).unwrap();
         let h: Point = env.storage().instance().get(&DataKey::H).unwrap();
-        let value_fr = commitment::fr_from_i128(&env, amount);
+        let value_fr = commitment::fr_from_i128(&env, credited);
         let blinding_fr = soroban_sdk::crypto::bls12_381::Fr::from_bytes(blinding);
         let c = commitment::commit(&env, &value_fr, &blinding_fr, &g, &h);
 
@@ -214,11 +238,9 @@ impl Piilo {
         env.storage().persistent().extend_ttl(&note_key, TTL_THRESHOLD, TTL_EXTEND_TO);
 
         let vault: i128 = env.storage().instance().get(&DataKey::VaultBalance).unwrap();
-        env.storage()
-            .instance()
-            .set(&DataKey::VaultBalance, &(vault + amount));
+        env.storage().instance().set(&DataKey::VaultBalance, &(vault + credited));
 
-        DepositEvent { user, amount }.publish(&env);
+        DepositEvent { user, amount: credited, fee }.publish(&env);
         Ok(())
     }
 
@@ -249,6 +271,13 @@ impl Piilo {
         sender.require_auth();
 
         let mut sender_account = load_account(&env, &sender)?;
+
+        let flat_fee: i128 = env.storage().instance().get(&DataKey::TransferFlatFee).unwrap_or(0);
+        if flat_fee > 0 {
+            let treasury: Address = env.storage().instance().get(&DataKey::Treasury).unwrap();
+            let native_token: Address = env.storage().instance().get(&DataKey::NativeToken).unwrap();
+            token::Client::new(&env, &native_token).transfer(&sender, &treasury, &flat_fee);
+        }
 
         let auditor_key: Point = env.storage().instance().get(&DataKey::AuditorKey).unwrap();
         let a_enc_fr = soroban_sdk::crypto::bls12_381::Fr::from_bytes(a_enc.clone());
@@ -344,14 +373,20 @@ impl Piilo {
         account.nonce += 1;
         save_account(&env, &user, &account);
 
-        env.storage()
-            .instance()
-            .set(&DataKey::VaultBalance, &(vault - amount));
+        env.storage().instance().set(&DataKey::VaultBalance, &(vault - amount));
+
+        let fee_bps: i128 = env.storage().instance().get(&DataKey::WithdrawFeeBps).unwrap_or(0);
+        let fee = amount * fee_bps / 10_000;
+        let payout = amount - fee;
 
         let native_token: Address = env.storage().instance().get(&DataKey::NativeToken).unwrap();
-        token::Client::new(&env, &native_token).transfer(&env.current_contract_address(), &user, &amount);
+        token::Client::new(&env, &native_token).transfer(&env.current_contract_address(), &user, &payout);
+        if fee > 0 {
+            let treasury: Address = env.storage().instance().get(&DataKey::Treasury).unwrap();
+            token::Client::new(&env, &native_token).transfer(&env.current_contract_address(), &treasury, &fee);
+        }
 
-        WithdrawEvent { user, amount }.publish(&env);
+        WithdrawEvent { user, amount, payout, fee }.publish(&env);
         Ok(())
     }
 
@@ -376,5 +411,32 @@ impl Piilo {
 
     pub fn get_vault_balance(env: Env) -> i128 {
         env.storage().instance().get(&DataKey::VaultBalance).unwrap()
+    }
+
+    /// Admin-only: update protocol fee rates. deposit_fee_bps and
+    /// withdraw_fee_bps are basis points (100 = 1%). transfer_flat_fee is
+    /// in the native asset's smallest unit (stroops for XLM).
+    pub fn set_fees(
+        env: Env,
+        deposit_fee_bps: i128,
+        withdraw_fee_bps: i128,
+        transfer_flat_fee: i128,
+    ) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        env.storage().instance().set(&DataKey::DepositFeeBps, &deposit_fee_bps);
+        env.storage().instance().set(&DataKey::WithdrawFeeBps, &withdraw_fee_bps);
+        env.storage().instance().set(&DataKey::TransferFlatFee, &transfer_flat_fee);
+    }
+
+    pub fn get_fees(env: Env) -> (i128, i128, i128) {
+        let deposit_fee_bps: i128 = env.storage().instance().get(&DataKey::DepositFeeBps).unwrap_or(0);
+        let withdraw_fee_bps: i128 = env.storage().instance().get(&DataKey::WithdrawFeeBps).unwrap_or(0);
+        let transfer_flat_fee: i128 = env.storage().instance().get(&DataKey::TransferFlatFee).unwrap_or(0);
+        (deposit_fee_bps, withdraw_fee_bps, transfer_flat_fee)
+    }
+
+    pub fn get_treasury(env: Env) -> Address {
+        env.storage().instance().get(&DataKey::Treasury).unwrap()
     }
 }

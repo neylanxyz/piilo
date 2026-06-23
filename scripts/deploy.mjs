@@ -79,13 +79,18 @@ log(`\nPiilo contract ID (pre-computed): ${PIILO_ID}`);
 
 log("\n── Deploying piilo ──");
 const constructorArgs = [
-  encodePoint(G_X_HEX, G_Y_HEX),          // g: Point
-  encodePoint(H_X_HEX, H_Y_HEX),          // h: Point
-  new Address(VERIFIER_ID).toScVal(),      // verifier: Address
-  encodeVk(readVkJson("transfer")),        // transfer_vk: VerificationKey
-  encodeVk(readVkJson("withdraw")),        // withdraw_vk: VerificationKey
-  new Address(NATIVE_TOKEN).toScVal(),     // native_token: Address
-  encodePoint(K_AUD_X_HEX, K_AUD_Y_HEX), // auditor_key: Point (k_aud=12345678901234567890)
+  encodePoint(G_X_HEX, G_Y_HEX),               // g: Point
+  encodePoint(H_X_HEX, H_Y_HEX),               // h: Point
+  new Address(VERIFIER_ID).toScVal(),           // verifier: Address
+  encodeVk(readVkJson("transfer")),             // transfer_vk: VerificationKey
+  encodeVk(readVkJson("withdraw")),             // withdraw_vk: VerificationKey
+  new Address(NATIVE_TOKEN).toScVal(),          // native_token: Address
+  encodePoint(K_AUD_X_HEX, K_AUD_Y_HEX),      // auditor_key: Point
+  new Address(keypair.publicKey()).toScVal(),   // admin: Address (deployer)
+  new Address(keypair.publicKey()).toScVal(),   // treasury: Address (deployer for testnet)
+  encodeI128(10n),                              // deposit_fee_bps: 10 = 0.1%
+  encodeI128(30n),                              // withdraw_fee_bps: 30 = 0.3%
+  encodeI128(1_000_000n),                       // transfer_flat_fee: 0.1 XLM in stroops
 ];
 
 await deployWithConstructor(piiloHash, salt, constructorArgs);
@@ -164,6 +169,16 @@ function computeContractId(kp, salt) {
   );
   const hashBuf = crypto.createHash("sha256").update(preimage.toXDR()).digest();
   return StrKey.encodeContract(hashBuf);
+}
+
+function encodeI128(value) {
+  const bi = BigInt(value);
+  const hi = bi >> 64n;
+  const lo = bi & ((1n << 64n) - 1n);
+  return xdr.ScVal.scvI128(new xdr.Int128Parts({
+    hi: xdr.Int64.fromString(hi.toString()),
+    lo: xdr.Uint64.fromString(lo.toString()),
+  }));
 }
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }

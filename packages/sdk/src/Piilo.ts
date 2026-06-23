@@ -41,9 +41,16 @@ function pointFromHex(x: string, y: string): JubJubPoint {
   return [normalise(x), normalise(y)];
 }
 
+// Canonical deployed contract addresses. contractId in PiiloConfig is optional;
+// if omitted the SDK uses this for the configured network.
+export const CONTRACT_IDS: Record<Network, string> = {
+  testnet: "", // filled after each deploy — see scripts/deploy.mjs
+  mainnet: "", // TBD
+};
+
 export interface PiiloConfig {
   network: Network;
-  contractId: string;
+  contractId?: string; // optional — defaults to CONTRACT_IDS[network]
   wallet: WalletAdapter & WalletSigner;
   relayUrl?: string; // optional — only for fee sponsorship, holds no secrets
 }
@@ -55,7 +62,9 @@ export class Piilo {
 
   constructor(cfg: PiiloConfig) {
     this.cfg = cfg;
-    this.stellar = new PiiloStellar(cfg.contractId, cfg.network);
+    const contractId = cfg.contractId ?? CONTRACT_IDS[cfg.network];
+    if (!contractId) throw new Error(`No contract deployed on ${cfg.network} yet — pass contractId explicitly`);
+    this.stellar = new PiiloStellar(contractId, cfg.network);
   }
 
   // Lazily derive and cache the note keypair (requires one wallet signature).
@@ -89,10 +98,14 @@ export class Piilo {
     const noteKeypair = await this.getNoteKeypair();
     const r = randomFr();
 
+    const { depositFeeBps } = await this.stellar.getFees();
+    const fee = amount * BigInt(depositFeeBps) / 10_000n;
+    const credited = amount - fee;
+
     await this.stellar.deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
 
     const state = loadState(address);
-    saveState(address, applyDeposit(state, amount, r));
+    saveState(address, applyDeposit(state, credited, r));
   }
 
   /**
@@ -180,7 +193,7 @@ export class Piilo {
    * Reveal balance and withdraw all XLM. Generates a Groth16 proof of balance
    * knowledge, submits the withdrawal, and resets local state.
    */
-  async withdraw(): Promise<void> {
+  async withdraw(): Promise<{ payout: bigint }> {
     const address = await this.myAddress();
     const state = loadState(address);
 
@@ -193,6 +206,10 @@ export class Piilo {
       onChain.balance_commitment[1]
     );
 
+    const { withdrawFeeBps } = await this.stellar.getFees();
+    const fee = state.balance * BigInt(withdrawFeeBps) / 10_000n;
+    const payout = state.balance - fee;
+
     const proof = await proveWithdraw({
       r_B: state.r,
       C_B,
@@ -202,6 +219,7 @@ export class Piilo {
     await this.stellar.withdraw(this.cfg.wallet, state.balance, proof);
 
     saveState(address, { balance: 0n, r: 0n, pendingNotes: [] });
+    return { payout };
   }
 
   /** Export local state (balance + blinding factor) as a JSON string. */
