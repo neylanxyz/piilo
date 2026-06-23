@@ -47,23 +47,32 @@ function pointFromHex(x: string, y: string): JubJubPoint {
 // Use asset: "XLM" (default) or asset: "USDC" in PiiloConfig to select.
 export const CONTRACT_IDS: Record<Network, Record<string, string>> = deployments as Record<Network, Record<string, string>>;
 
+// Default circuit base URL: same-origin /circuits/ (matches Piilo's own Vercel
+// hosting and any app that copies circuits to public/circuits/). External npm
+// consumers who don't self-host can pass the jsDelivr CDN URL instead:
+//   https://cdn.jsdelivr.net/gh/neylanxyz/piilo@v0.1.0/circuits/build
+const DEFAULT_CIRCUITS_URL = "/circuits";
+
 export interface PiiloConfig {
   network: Network;
-  asset?: string;      // token symbol: "XLM" (default), "USDC", etc.
-  contractId?: string; // explicit override — takes precedence over asset lookup
+  asset?: string;       // token symbol: "XLM" (default), "USDC", etc.
+  contractId?: string;  // explicit override — takes precedence over asset lookup
   wallet: WalletAdapter & WalletSigner;
   relayUrl?: string;
+  circuitsUrl?: string; // base URL for circuit files; defaults to /circuits
 }
 
 export class Piilo {
   private cfg: PiiloConfig;
   private stellar: PiiloStellar;
   private asset: string;
+  private circuitsBase: string;
   private noteKeypair: NoteKeypair | null = null;
 
   constructor(cfg: PiiloConfig) {
     this.cfg = cfg;
     this.asset = cfg.asset ?? "XLM";
+    this.circuitsBase = cfg.circuitsUrl ?? DEFAULT_CIRCUITS_URL;
     const contractId = cfg.contractId ?? CONTRACT_IDS[cfg.network]?.[this.asset];
     if (!contractId) {
       throw new Error(
@@ -225,7 +234,7 @@ export class Piilo {
       r_B: state.r,
       C_B,
       B: state.balance,
-    });
+    }, this.circuitsBase);
 
     await this.stellar.withdraw(this.cfg.wallet, state.balance, proof);
 
@@ -288,65 +297,33 @@ export class Piilo {
     R_e: JubJubPoint;
     a_enc: bigint;
   }> {
-    // Fetch the auditor public key from the contract (one RPC sim call).
     const K_aud = await this.stellar.getAuditorKey();
 
-    // Generate a fresh non-zero ephemeral scalar. The circuit's A0 constraint
-    // rejects r_e = 0 because it collapses S to the identity and leaks A.
     let r_e = 0n;
     while (r_e === 0n) r_e = randomFr();
 
-    // Pre-compute auditor ECDH values locally — the circuit constrains these
-    // to match what's derived from r_e, so the prover must supply them.
     const hPt: [bigint, bigint] = [BigInt(H[0]), BigInt(H[1])];
     const kPt: [bigint, bigint] = [BigInt(K_aud[0]), BigInt(K_aud[1])];
+    const [re_x, re_y] = scalarMul(r_e, hPt);
+    const [s_x]        = scalarMul(r_e, kPt);
+    const a_enc        = modFr(A + s_x);
+    const R_e: JubJubPoint = [re_x.toString(), re_y.toString()];
 
-    const [re_x, re_y] = scalarMul(r_e, hPt);         // R_e = r_e * H
-    const [s_x]        = scalarMul(r_e, kPt);          // S   = r_e * K_aud
-    const a_enc        = modFr(A + s_x);               // A_enc = A + S.x mod q
+    // C_A and C_new computed locally — circuit constrains these to match,
+    // so if the proof passes on-chain they are correct by soundness.
+    const C_A: JubJubPoint   = localCommit(A,     r_A)   as JubJubPoint;
+    const C_new: JubJubPoint = localCommit(B - A, r_new) as JubJubPoint;
 
-    const R_e: JubJubPoint  = [re_x.toString(), re_y.toString()];
+    // Circuit files are fetched from circuitsBase and SHA-256 verified before
+    // any private input reaches snarkjs.
+    const proof = await proveTransfer({
+      B, r_B, A, r_A, r_new, r_e,
+      C_B, C_A, C_new,
+      K_aud, R_e,
+      A_enc: a_enc,
+    }, this.circuitsBase);
 
-    const { groth16 } = await import("snarkjs");
-    const snarkInput = {
-      B: B.toString(),
-      r_B: r_B.toString(),
-      A: A.toString(),
-      r_A: r_A.toString(),
-      r_new: r_new.toString(),
-      r_e: r_e.toString(),
-      C_B: [C_B[0], C_B[1]],
-      C_A: localCommit(A, r_A),
-      C_new: localCommit(B - A, r_new),
-      K_aud: [K_aud[0], K_aud[1]],
-      R_e: [R_e[0], R_e[1]],
-      A_enc: a_enc.toString(),
-    };
-
-    const wasmPath = assetPath("transfer_js/transfer.wasm");
-    const zkeyPath = assetPath("transfer_1.zkey");
-    const { proof: rawProof, publicSignals } = await groth16.fullProve(
-      snarkInput,
-      wasmPath,
-      zkeyPath
-    );
-
-    // publicSignals order matches `component main {public [C_B, C_A, C_new, K_aud, R_e, A_enc]}`:
-    // [0] C_B.x  [1] C_B.y  [2] C_A.x  [3] C_A.y  [4] C_new.x  [5] C_new.y
-    // [6] K_aud.x [7] K_aud.y [8] R_e.x [9] R_e.y  [10] A_enc
-    const C_A_out: JubJubPoint   = [publicSignals[2], publicSignals[3]];
-    const C_new_out: JubJubPoint = [publicSignals[4], publicSignals[5]];
-
-    const proof = {
-      pi_a: [rawProof.pi_a[0], rawProof.pi_a[1]] as [string, string],
-      pi_b: [
-        [rawProof.pi_b[0][0], rawProof.pi_b[0][1]],
-        [rawProof.pi_b[1][0], rawProof.pi_b[1][1]],
-      ] as [[string, string], [string, string]],
-      pi_c: [rawProof.pi_c[0], rawProof.pi_c[1]] as [string, string],
-    };
-
-    return { proof, C_A: C_A_out, C_new: C_new_out, R_e, a_enc };
+    return { proof, C_A, C_new, R_e, a_enc };
   }
 
   // Fetch the note pubkey for a recipient from the contract.
@@ -386,12 +363,6 @@ export class Piilo {
 }
 
 // ── Local JubJub commitment (mirrors commitment.rs, for pre-computing C_A/C_new) ──
-
-function assetPath(rel: string): string {
-  if (typeof window !== "undefined") return `/circuits/${rel}`;
-  const repoRoot = new URL("../../../", import.meta.url);
-  return new URL(`circuits/build/${rel}`, repoRoot).pathname;
-}
 
 function localCommit(value: bigint, blinding: bigint): [string, string] {
   const [x, y] = edwardsAdd(scalarMul(value, G), scalarMul(blinding, H));
