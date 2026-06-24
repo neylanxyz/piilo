@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["contracts/piilo", "contracts/verifier"]
+members = ["contracts/piilo", "contracts/verifier", "contracts/registry"]
 
 [workspace.dependencies]
 soroban-sdk = "25"

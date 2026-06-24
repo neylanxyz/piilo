@@ -42,10 +42,11 @@ function pointFromHex(x: string, y: string): JubJubPoint {
   return [normalise(x), normalise(y)];
 }
 
-// Canonical deployed Piilo contract addresses, keyed by network then token symbol.
-// Updated automatically by scripts/deploy.mjs after each deploy.
-// Use asset: "XLM" (default) or asset: "USDC" in PiiloConfig to select.
-export const CONTRACT_IDS: Record<Network, Record<string, string>> = deployments as Record<Network, Record<string, string>>;
+type NetworkDeployment = {
+  registry?: string;
+  sacs?: Record<string, string>;
+};
+const DEPLOYMENTS = deployments as Record<Network, NetworkDeployment>;
 
 // Default circuit base URL: same-origin /circuits/ (matches Piilo's own Vercel
 // hosting and any app that copies circuits to public/circuits/). External npm
@@ -64,7 +65,7 @@ export interface PiiloConfig {
 
 export class Piilo {
   private cfg: PiiloConfig;
-  private stellar: PiiloStellar;
+  private _stellar: PiiloStellar | null = null;
   private asset: string;
   private circuitsBase: string;
   private noteKeypair: NoteKeypair | null = null;
@@ -73,14 +74,34 @@ export class Piilo {
     this.cfg = cfg;
     this.asset = cfg.asset ?? "XLM";
     this.circuitsBase = cfg.circuitsUrl ?? DEFAULT_CIRCUITS_URL;
-    const contractId = cfg.contractId ?? CONTRACT_IDS[cfg.network]?.[this.asset];
+    // contractId is resolved lazily via the on-chain registry;
+    // explicit cfg.contractId bypasses the registry entirely.
+  }
+
+  private async getStellar(): Promise<PiiloStellar> {
+    if (this._stellar) return this._stellar;
+
+    let contractId = this.cfg.contractId;
     if (!contractId) {
-      throw new Error(
-        `No Piilo contract deployed for ${this.asset} on ${cfg.network} yet — ` +
-        `run scripts/deploy.mjs --symbol ${this.asset} or pass contractId explicitly`
-      );
+      const net = DEPLOYMENTS[this.cfg.network];
+      const registryId = net?.registry;
+      const tokenSac   = net?.sacs?.[this.asset];
+      if (!registryId || !tokenSac) {
+        throw new Error(
+          `No registry configured for ${this.asset} on ${this.cfg.network}. ` +
+          `Pass contractId explicitly.`
+        );
+      }
+      contractId = await PiiloStellar.registryLookup(this.cfg.network, registryId, tokenSac) ?? undefined;
+      if (!contractId) {
+        throw new Error(
+          `Token ${this.asset} is not registered in the Piilo registry on ${this.cfg.network}.`
+        );
+      }
     }
-    this.stellar = new PiiloStellar(contractId, cfg.network);
+
+    this._stellar = new PiiloStellar(contractId, this.cfg.network);
+    return this._stellar;
   }
 
   // Lazily derive and cache the note keypair (requires one wallet signature).
@@ -98,7 +119,7 @@ export class Piilo {
   // ── Public API ─────────────────────────────────────────────────────────────
 
   async getFees(): Promise<{ depositFeeBps: number; withdrawFeeBps: number; transferFlatFee: bigint }> {
-    return this.stellar.getFees();
+    return (await this.getStellar()).getFees();
   }
 
   /** Current local plaintext balance. Does not require a network call. */
@@ -118,11 +139,11 @@ export class Piilo {
     const noteKeypair = await this.getNoteKeypair();
     const r = randomFr();
 
-    const { depositFeeBps } = await this.stellar.getFees();
+    const { depositFeeBps } = await (await this.getStellar()).getFees();
     const fee = amount * BigInt(depositFeeBps) / 10_000n;
     const credited = amount - fee;
 
-    await this.stellar.deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
+    await (await this.getStellar()).deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
 
     const state = loadState(address, this.asset);
     saveState(address, this.asset,applyDeposit(state, credited, r));
@@ -140,7 +161,7 @@ export class Piilo {
     if (amount > state.balance) throw new Error("insufficient balance");
 
     // Fetch current on-chain commitment to use as C_B in the proof.
-    const onChain = await this.stellar.getAccount(address);
+    const onChain = await (await this.getStellar()).getAccount(address);
     if (!onChain) throw new Error("no on-chain account — deposit first");
     const C_B = pointFromHex(
       onChain.balance_commitment[0],
@@ -168,7 +189,7 @@ export class Piilo {
       encryptNote(amount, r_A, recipientPubkey, noteKeypair)
     );
 
-    await this.stellar.transfer(
+    await (await this.getStellar()).transfer(
       this.cfg.wallet,
       to,
       C_A,
@@ -189,13 +210,13 @@ export class Piilo {
    */
   async settleIfPending(): Promise<{ received: bigint } | null> {
     const address = await this.myAddress();
-    const onChain = await this.stellar.getAccount(address);
+    const onChain = await (await this.getStellar()).getAccount(address);
     if (!onChain?.has_pending) return null;
 
     // Fetch and decrypt incoming transfer notes from on-chain events.
     const notes = await this.fetchPendingNotes(address);
 
-    await this.stellar.settlePending(this.cfg.wallet);
+    await (await this.getStellar()).settlePending(this.cfg.wallet);
 
     const state = loadState(address, this.asset);
     const withNotes = notes.reduce(
@@ -219,14 +240,14 @@ export class Piilo {
 
     if (state.balance <= 0n) throw new Error("no balance to withdraw");
 
-    const onChain = await this.stellar.getAccount(address);
+    const onChain = await (await this.getStellar()).getAccount(address);
     if (!onChain) throw new Error("no on-chain account");
     const C_B = pointFromHex(
       onChain.balance_commitment[0],
       onChain.balance_commitment[1]
     );
 
-    const { withdrawFeeBps } = await this.stellar.getFees();
+    const { withdrawFeeBps } = await (await this.getStellar()).getFees();
     const fee = state.balance * BigInt(withdrawFeeBps) / 10_000n;
     const payout = state.balance - fee;
 
@@ -236,7 +257,7 @@ export class Piilo {
       B: state.balance,
     }, this.circuitsBase);
 
-    await this.stellar.withdraw(this.cfg.wallet, state.balance, proof);
+    await (await this.getStellar()).withdraw(this.cfg.wallet, state.balance, proof);
 
     saveState(address, this.asset,{ balance: 0n, r: 0n, pendingNotes: [] });
     return { payout };
@@ -269,7 +290,7 @@ export class Piilo {
     const balance = BigInt(data.balance);
     const r = BigInt(data.r);
 
-    const onChain = await this.stellar.getAccount(address);
+    const onChain = await (await this.getStellar()).getAccount(address);
     if (!onChain) throw new Error("No on-chain account — deposit first, then restore");
 
     const [cx, cy] = localCommit(balance, r);
@@ -297,7 +318,7 @@ export class Piilo {
     R_e: JubJubPoint;
     a_enc: bigint;
   }> {
-    const K_aud = await this.stellar.getAuditorKey();
+    const K_aud = await (await this.getStellar()).getAuditorKey();
 
     let r_e = 0n;
     while (r_e === 0n) r_e = randomFr();
@@ -333,7 +354,7 @@ export class Piilo {
     if (address === myAddr) {
       return (await this.getNoteKeypair()).publicKey;
     }
-    const pubkey = await this.stellar.getNotePubkey(address);
+    const pubkey = await (await this.getStellar()).getNotePubkey(address);
     if (pubkey) return pubkey;
     throw new Error(
       `Recipient ${address} has not deposited yet — their note pubkey is not on-chain.`
@@ -344,7 +365,7 @@ export class Piilo {
   // Notes are written on transfer and cleared on settle — no event queries needed.
   private async fetchPendingNotes(address: string): Promise<Note[]> {
     const noteKeypair = await this.getNoteKeypair();
-    const rawNotes = await this.stellar.getPendingNotes(address);
+    const rawNotes = await (await this.getStellar()).getPendingNotes(address);
     const notes: Note[] = [];
     for (const { from, encryptedNote } of rawNotes) {
       try {
