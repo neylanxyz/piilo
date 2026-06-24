@@ -1,15 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { PiiloStellar, decryptAuditorNote, CONTRACT_IDS } from "@piilo/sdk";
+import { PiiloStellar, decryptAuditorNote } from "@piilo/sdk";
 
 const CONTRACT_IDS_ENV = {
   XLM:  import.meta.env.VITE_PIILO_XLM  ?? import.meta.env.VITE_CONTRACT_ID ?? undefined,
   USDC: import.meta.env.VITE_PIILO_USDC ?? undefined,
 };
+const FALLBACK_IDS = {
+  XLM:  "CBWSNSCQAHVH53MMQBYV5M5EEYMFZVKBDHF2ZPP6NKYFDLA66ZLPTQIB",
+  USDC: "CDYO7CD5DJ3YVB4GOZ5BYPFOM7TMGUALP6AYMSYSAYWOS6WWIZL6NBKW",
+};
 const SUPPORTED_ASSETS = ["XLM", "USDC"];
 const NETWORK = "testnet";
 
 function contractId(asset) {
-  return CONTRACT_IDS_ENV[asset] ?? CONTRACT_IDS[NETWORK]?.[asset] ?? "";
+  return CONTRACT_IDS_ENV[asset] ?? FALLBACK_IDS[asset] ?? "";
 }
 
 function shortenAddr(addr) {
