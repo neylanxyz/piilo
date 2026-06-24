@@ -165,7 +165,7 @@ export default function App() {
     try {
       const [bal, chain] = await Promise.all([
         sdk.getBalance(),
-        sdk.stellar?.getAccount(address).catch(() => null),
+        sdk.getAccount(address).catch(() => null),
       ]);
       setBalance(bal);
       setOnChain(chain);

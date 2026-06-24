@@ -122,6 +122,11 @@ export class Piilo {
     return (await this.getStellar()).getFees();
   }
 
+  /** Fetch the on-chain account state (commitments, pending flag). */
+  async getAccount(address: string) {
+    return (await this.getStellar()).getAccount(address);
+  }
+
   /** Current local plaintext balance. Does not require a network call. */
   async getBalance(): Promise<bigint> {
     const address = await this.myAddress();
