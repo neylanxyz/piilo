@@ -6,10 +6,12 @@ All public types exported from `@piilo/sdk`.
 
 ```typescript
 interface PiiloConfig {
-  network:     Network
-  contractId:  string
-  wallet:      WalletAdapter & WalletSigner
-  relayUrl?:   string
+  network:       Network
+  asset?:        string           // token symbol, defaults to "XLM"
+  contractId?:   string           // explicit override, bypasses registry
+  wallet:        WalletAdapter & WalletSigner
+  relayUrl?:     string
+  circuitsUrl?:  string           // base URL for circuit files, defaults to "/circuits"
 }
 ```
 
