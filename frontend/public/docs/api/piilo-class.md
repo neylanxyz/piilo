@@ -5,8 +5,8 @@ The main entry point of the SDK. Coordinates local state, proof generation, note
 ## Import
 
 ```typescript
-import { Piilo } from '@piilo/sdk'
-import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
+import type { PiiloConfig, WalletAdapter, Network } from '@neylanxyz/piilo'
 ```
 
 ## Constructor

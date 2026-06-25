@@ -1,6 +1,6 @@
 # Types
 
-All public types exported from `@piilo/sdk`.
+All public types exported from `@neylanxyz/piilo`.
 
 ## PiiloConfig
 

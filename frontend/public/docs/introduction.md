@@ -20,7 +20,7 @@ See [Privacy Model](./concepts/privacy-model.md) for the full threat model.
 
 ## The SDK
 
-The `@piilo/sdk` package exposes a single class, `Piilo`, with five public methods:
+The `@neylanxyz/piilo` package exposes a single class, `Piilo`, with five public methods:
 
 | Method | What it does |
 |---|---|

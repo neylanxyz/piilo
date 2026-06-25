@@ -47,7 +47,7 @@ function circuitsPlugin() {
 export default defineConfig({
   plugins: [react(), circuitsPlugin()],
   optimizeDeps: {
-    exclude: ["snarkjs", "@piilo/sdk"],
+    exclude: ["snarkjs", "@neylanxyz/piilo"],
   },
   base: "./",   // relative asset paths — works served at any subdirectory
   build: {
@@ -58,7 +58,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@piilo/sdk": path.resolve(__dirname, "../../packages/sdk/src/index.ts"),
+      "@neylanxyz/piilo": path.resolve(__dirname, "../../packages/sdk/src/index.ts"),
     },
   },
 });

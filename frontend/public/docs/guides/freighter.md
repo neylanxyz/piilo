@@ -19,7 +19,7 @@ import {
   signTransaction,
   signMessage,
 } from '@stellar/freighter-api'
-import type { WalletAdapter, WalletSigner } from '@piilo/sdk'
+import type { WalletAdapter, WalletSigner } from '@neylanxyz/piilo'
 
 export async function createFreighterAdapter(): Promise<WalletAdapter & WalletSigner> {
   // Check that Freighter is installed
@@ -61,7 +61,7 @@ export async function createFreighterAdapter(): Promise<WalletAdapter & WalletSi
 ## Usage
 
 ```typescript
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 import { createFreighterAdapter } from './freighterAdapter'
 
 async function initPiilo() {
@@ -91,7 +91,7 @@ To minimize friction, consider calling `piilo.deposit()` only after the user has
 
 ```tsx
 import { useState, useCallback } from 'react'
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 import { createFreighterAdapter } from './freighterAdapter'
 
 export function usePiilo(contractId: string) {

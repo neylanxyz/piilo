@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Piilo } from "@piilo/sdk";
+import { Piilo } from "@neylanxyz/piilo";
 
 // ── config ─────────────────────────────────────────────────────────────────────
 const CONTRACT_IDS_ENV = {

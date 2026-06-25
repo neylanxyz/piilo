@@ -52,7 +52,7 @@ Piilo uses an **account model**: each user has one account with one encrypted ba
                  │
                  ▼
 ┌──────────────────────────────────────────────────┐
-│              @piilo/sdk (TypeScript)              │
+│              @neylanxyz/piilo (TypeScript)              │
 │  deposit · transfer · settleIfPending · withdraw  │
 │  Client-side Groth16 proving (snarkjs WASM)      │
 │  Local state: plaintext balance + blinding factor │
@@ -114,7 +114,7 @@ piilo/
     verifier/             — Groth16/BLS12-381 verifier (ported from stellar/soroban-examples)
     registry/             — on-chain token → Piilo contract address registry
   packages/
-    sdk/                  — @piilo/sdk (TypeScript)
+    sdk/                  — @neylanxyz/piilo (TypeScript)
   examples/
     confidential-wallet/  — single-user wallet demo
     confidential-payroll/ — multi-recipient private payroll demo
@@ -171,7 +171,7 @@ Requires a `worker` identity configured in the Stellar CLI (`stellar keys genera
 ## SDK
 
 ```typescript
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 
 const piilo = new Piilo({
   network: 'testnet',

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { PiiloStellar, decryptAuditorNote } from "@piilo/sdk";
+import { PiiloStellar, decryptAuditorNote } from "@neylanxyz/piilo";
 
 const CONTRACT_IDS_ENV = {
   XLM:  import.meta.env.VITE_PIILO_XLM  ?? import.meta.env.VITE_CONTRACT_ID ?? undefined,
