@@ -3,8 +3,8 @@ const en = {
   'nav.examples':  'Examples',
   'nav.github':    'GitHub',
 
-  'hero.headline':      'Private payments<br>on Stellar.',
-  'hero.sub':           'ZK proofs generated in your browser. Balances stored as <strong>Pedersen commitments</strong> — the chain sees a point on a curve, not a number. Works with XLM and USDC.',
+  'hero.headline':      'Financial confidentiality<br>on Stellar.',
+  'hero.sub':           'Plug-and-play SDK. ZK proofs generated in your browser. Balances stored as <strong>Pedersen commitments</strong> — the chain sees a point on a curve, not a number.<img src="/xlm.png" alt="XLM" style="width:1.5em;height:1.5em;vertical-align:middle;border-radius:6px;margin-left:0.4em;display:inline-block;"><img src="/usdc.png" alt="USDC" style="width:1.5em;height:1.5em;vertical-align:middle;border-radius:6px;margin-left:0.4em;display:inline-block;">',
   'hero.cta.primary':   'Read the Docs',
   'hero.cta.secondary': 'See Examples →',
   'hero.cta.payroll':   'Try Payroll Demo',
@@ -53,6 +53,30 @@ const en = {
   'spec.auditor.term': 'Compliance Auditor Hook',
   'spec.auditor.sub':  'JubJub ECDH · per-transfer',
   'spec.auditor.def':  'Every transfer encrypts the amount under a registered auditor public key using JubJub ECDH: the sender computes a shared secret with the auditor\'s key and masks the amount as A_enc = A + S.x. The auditor can decrypt all transfer amounts using their private scalar — nobody else can. Addresses are always public by design; only amounts are hidden.',
+
+  'roadmap.label': 'roadmap',
+  'roadmap.h2':   'Built to last.<br>Shipped in stages.',
+  'roadmap.now':  'now',
+
+  'roadmap.v01.version': 'v0.1',
+  'roadmap.v01.title':   'Ship',
+  'roadmap.v01.body':    'Public SDK release on npm. Git tag v0.1.0. Testnet contracts live. Full docs, quickstart, and two working demos.',
+
+  'roadmap.v02.version': 'v0.2',
+  'roadmap.v02.title':   'Harden',
+  'roadmap.v02.body':    'Third-party security audit. State recovery UI for lost local state. Institutional onboarding guide.',
+
+  'roadmap.v03.version': 'v0.3',
+  'roadmap.v03.title':   'Mainnet',
+  'roadmap.v03.body':    'Production contract deployment. Alignment with OpenZeppelin confidential token standard interface.',
+
+  'roadmap.v10.version': 'v1.0',
+  'roadmap.v10.title':   'Ecosystem',
+  'roadmap.v10.body':    'Active SDF engagement. Fireblocks and Anchorage integration support. Confidential token SEP proposal submitted.',
+
+  'roadmap.v20.version': 'v2.0',
+  'roadmap.v20.title':   'OZ Integration',
+  'roadmap.v20.body':    'Adopt OpenZeppelin confidential token interface as the canonical standard. Piilo becomes the reference implementation on Stellar.',
 
   'footer.tagline':          'Private payments on Stellar',
   'footer.links.docs':       'Docs',

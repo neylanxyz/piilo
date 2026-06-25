@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useI18n } from '../i18n'
-import logo from '../assets/logo.png'
+import logo from '../../assets/logo.png'
 
 function T({ k }: { k: Parameters<ReturnType<typeof useI18n>['t']>[0] }) {
   const { t } = useI18n()
@@ -136,6 +136,38 @@ export function Landing() {
               <span className="kw">await</span>{' piilo.'}<span className="mt">withdraw</span>{'()'}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ═══ ROADMAP ════════════════════════════════════════ */}
+      <section className="section" id="roadmap">
+        <div className="roadmap-header reveal">
+          <p className="section-label">{t('roadmap.label')}</p>
+          <h2 className="section-h2" dangerouslySetInnerHTML={{ __html: t('roadmap.h2') }} />
+        </div>
+
+        <div className="roadmap-timeline">
+          {([
+            { vk: 'roadmap.v01.version', tk: 'roadmap.v01.title', bk: 'roadmap.v01.body', now: true },
+            { vk: 'roadmap.v02.version', tk: 'roadmap.v02.title', bk: 'roadmap.v02.body', now: false },
+            { vk: 'roadmap.v03.version', tk: 'roadmap.v03.title', bk: 'roadmap.v03.body', now: false },
+            { vk: 'roadmap.v10.version', tk: 'roadmap.v10.title', bk: 'roadmap.v10.body', now: false },
+            { vk: 'roadmap.v20.version', tk: 'roadmap.v20.title', bk: 'roadmap.v20.body', now: false },
+          ] as const).map(({ vk, tk, bk, now }, i) => (
+            <div key={vk} className={`roadmap-item reveal rd${(i % 4) + 1}${now ? ' roadmap-item--now' : ''}`}>
+              <div className="roadmap-node">
+                <div className="roadmap-dot" />
+              </div>
+              <div className="roadmap-content">
+                <div className="roadmap-meta">
+                  <span className="roadmap-version">{t(vk)}</span>
+                  {now && <span className="roadmap-now-badge">{t('roadmap.now')}</span>}
+                </div>
+                <h3 className="roadmap-title">{t(tk)}</h3>
+                <p className="roadmap-body">{t(bk)}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

@@ -311,6 +311,97 @@
 .nm  { color: oklch(0.80 0.14 55); }
 .inline-code { font-family: var(--font-code); font-size: 0.875em; color: var(--accent); }
 
+/* ─── ROADMAP ────────────────────────────────────────── */
+.roadmap-header { margin-bottom: clamp(3rem, 5vw, 5rem); }
+.roadmap-header .section-h2 { max-width: 20ch; }
+
+.roadmap-timeline {
+  position: relative;
+  padding-left: 2.5rem;
+}
+.roadmap-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    var(--accent) 0%,
+    var(--accent) 10%,
+    var(--border-dim) 10%,
+    var(--border-dim) 100%
+  );
+}
+
+.roadmap-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 1.75rem;
+  padding-bottom: clamp(2.5rem, 4vw, 3.5rem);
+  align-items: start;
+}
+.roadmap-item:last-child { padding-bottom: 0; }
+
+.roadmap-node {
+  position: relative;
+  width: 1rem;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.3125rem;
+}
+.roadmap-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.roadmap-item--now .roadmap-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow), 0 0 12px oklch(0.94 0.27 131 / 0.3);
+}
+
+.roadmap-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+}
+.roadmap-version {
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.roadmap-item--now .roadmap-version { color: var(--accent); }
+.roadmap-now-badge {
+  font-family: var(--font-code);
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 100px;
+  padding: 0.1875rem 0.5rem;
+}
+.roadmap-title {
+  font-size: 1.1875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.5rem;
+}
+.roadmap-item--now .roadmap-title { color: var(--ink); }
+.roadmap-body {
+  font-size: 0.9375rem;
+  color: var(--muted-hi);
+  line-height: 1.7;
+  max-width: 52ch;
+}
+
 /* ─── TECH SPEC ──────────────────────────────────────── */
 .spec-header { margin-bottom: clamp(2.5rem, 4vw, 4rem); }
 .spec-table { width: 100%; }

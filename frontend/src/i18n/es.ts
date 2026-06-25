@@ -5,8 +5,8 @@ const es: Record<I18nKey, string> = {
   'nav.examples': 'Ejemplos',
   'nav.github':   'GitHub',
 
-  'hero.headline':      'Pagos privados<br>en Stellar.',
-  'hero.sub':           'Pruebas ZK generadas en tu navegador. Saldos almacenados como <strong>compromisos Pedersen</strong> — la red ve un punto en una curva, no un número. Compatible con XLM y USDC.',
+  'hero.headline':      'Confidencialidad financiera<br>en Stellar.',
+  'hero.sub':           'SDK plug-and-play. Pruebas ZK generadas en tu navegador. Saldos almacenados como <strong>compromisos Pedersen</strong> — la red ve un punto en una curva, no un número.<img src="/xlm.png" alt="XLM" style="width:1.5em;height:1.5em;vertical-align:middle;border-radius:6px;margin-left:0.4em;display:inline-block;"><img src="/usdc.png" alt="USDC" style="width:1.5em;height:1.5em;vertical-align:middle;border-radius:6px;margin-left:0.4em;display:inline-block;">',
   'hero.cta.primary':   'Leer la documentación',
   'hero.cta.secondary': 'Ver ejemplos →',
   'hero.cta.payroll':   'Demo de nómina',
@@ -55,6 +55,30 @@ const es: Record<I18nKey, string> = {
   'spec.auditor.term': 'Hook de auditoría de cumplimiento',
   'spec.auditor.sub':  'JubJub ECDH · por transferencia',
   'spec.auditor.def':  'Cada transferencia cifra el monto bajo una clave pública de auditor registrada mediante JubJub ECDH: el emisor calcula un secreto compartido con la clave del auditor y enmascara el monto como A_enc = A + S.x. El auditor puede descifrar todos los montos de transferencia usando su escalar privado — nadie más puede. Las direcciones son siempre públicas por diseño; solo los montos están ocultos.',
+
+  'roadmap.label': 'roadmap',
+  'roadmap.h2':   'Construido para durar.<br>Lanzado por etapas.',
+  'roadmap.now':  'ahora',
+
+  'roadmap.v01.version': 'v0.1',
+  'roadmap.v01.title':   'Lanzamiento',
+  'roadmap.v01.body':    'Publicación del SDK en npm. Git tag v0.1.0. Contratos en testnet activos. Docs completos, quickstart y dos demos funcionales.',
+
+  'roadmap.v02.version': 'v0.2',
+  'roadmap.v02.title':   'Refuerzo',
+  'roadmap.v02.body':    'Auditoría de seguridad de terceros. UI de recuperación de estado para estado local perdido. Guía de onboarding institucional.',
+
+  'roadmap.v03.version': 'v0.3',
+  'roadmap.v03.title':   'Mainnet',
+  'roadmap.v03.body':    'Despliegue del contrato en producción. Alineación con el estándar de token confidencial de OpenZeppelin.',
+
+  'roadmap.v10.version': 'v1.0',
+  'roadmap.v10.title':   'Ecosistema',
+  'roadmap.v10.body':    'Colaboración activa con SDF. Soporte de integración con Fireblocks y Anchorage. Propuesta SEP de token confidencial enviada.',
+
+  'roadmap.v20.version': 'v2.0',
+  'roadmap.v20.title':   'Integración OZ',
+  'roadmap.v20.body':    'Adopción de la interfaz de token confidencial de OpenZeppelin como estándar canónico. Piilo se convierte en la implementación de referencia en Stellar.',
 
   'footer.tagline':          'Pagos privados en Stellar',
   'footer.links.docs':       'Docs',
