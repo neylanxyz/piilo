@@ -60,7 +60,7 @@ const en = {
 
   'roadmap.v01.version': 'v0.1',
   'roadmap.v01.title':   'Ship',
-  'roadmap.v01.body':    'Public SDK release on npm. Git tag v0.1.0. Testnet contracts live. Full docs, quickstart, and two working demos.',
+  'roadmap.v01.body':    'SDK published on npm as @neylanxyz/piilo. Git tag v0.1.0. Testnet contracts live. Full docs, quickstart, and two working demos.',
 
   'roadmap.v02.version': 'v0.2',
   'roadmap.v02.title':   'Harden',

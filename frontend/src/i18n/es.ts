@@ -62,7 +62,7 @@ const es: Record<I18nKey, string> = {
 
   'roadmap.v01.version': 'v0.1',
   'roadmap.v01.title':   'Lanzamiento',
-  'roadmap.v01.body':    'Publicación del SDK en npm. Git tag v0.1.0. Contratos en testnet activos. Docs completos, quickstart y dos demos funcionales.',
+  'roadmap.v01.body':    'SDK publicado en npm como @neylanxyz/piilo. Git tag v0.1.0. Contratos en testnet activos. Docs completos, quickstart y dos demos funcionales.',
 
   'roadmap.v02.version': 'v0.2',
   'roadmap.v02.title':   'Refuerzo',
