@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n'
 import { LangSwitcher } from './LangSwitcher'
-import logo from '../assets/logo.png'
+import logo from '../../assets/logo.png'
 
 export function Nav() {
   const { t } = useI18n()

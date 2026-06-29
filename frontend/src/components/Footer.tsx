@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n'
-import logo from '../assets/logo.png'
+import logo from '../../assets/logo.png'
 
 export function Footer() {
   const { t } = useI18n()
