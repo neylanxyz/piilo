@@ -1,4 +1,4 @@
-export { Piilo, CONTRACT_IDS } from "./Piilo.js";
+export { Piilo } from "./Piilo.js";
 export type { PiiloConfig } from "./Piilo.js";
 export { PiiloStellar } from "./stellar.js";
 export type { WalletAdapter, Network } from "./stellar.js";

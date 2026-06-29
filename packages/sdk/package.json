@@ -1,6 +1,6 @@
 {
-  "name": "@piilo/sdk",
-  "version": "0.1.0",
+  "name": "@neylanxyz/piilo",
+  "version": "0.1.1",
   "description": "Piilo confidential payments SDK for Stellar",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,14 +11,19 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "tsc && node --test dist/__tests__/**/*.test.js"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^13.0.0",
     "snarkjs": "^0.7.5",
     "tweetnacl": "^1.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "license": "Apache-2.0",
   "devDependencies": {

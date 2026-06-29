@@ -11,8 +11,9 @@ Balances:  hidden   (Pedersen commitments on-chain)
 ```
 
 Live on Stellar Testnet:
-- **XLM** — `CADAWM6FC7QAJN5COJNG5WQRAAKBQCRJ3Q6ZXMTLCXA4PAUG45BDLXZG`
-- **USDC** — `CB3JHUGCZAEEMMDJ5HSVGRAJ7WWIKH35LNTFFVW5GI3SARHQUELFYEIJ`
+- **Registry** — `CCZIRPOS5ERY2KYVNI6SP4SRUGP7NNKWPAKDFBZMPUPERWHS64DCPRTC`
+- **XLM** — `CBWSNSCQAHVH53MMQBYV5M5EEYMFZVKBDHF2ZPP6NKYFDLA66ZLPTQIB`
+- **USDC** — `CDYO7CD5DJ3YVB4GOZ5BYPFOM7TMGUALP6AYMSYSAYWOS6WWIZL6NBKW`
 
 ---
 
@@ -51,7 +52,7 @@ Piilo uses an **account model**: each user has one account with one encrypted ba
                  │
                  ▼
 ┌──────────────────────────────────────────────────┐
-│              @piilo/sdk (TypeScript)              │
+│              @neylanxyz/piilo (TypeScript)              │
 │  deposit · transfer · settleIfPending · withdraw  │
 │  Client-side Groth16 proving (snarkjs WASM)      │
 │  Local state: plaintext balance + blinding factor │
@@ -111,8 +112,9 @@ piilo/
   contracts/
     piilo/                — main Soroban contract
     verifier/             — Groth16/BLS12-381 verifier (ported from stellar/soroban-examples)
+    registry/             — on-chain token → Piilo contract address registry
   packages/
-    sdk/                  — @piilo/sdk (TypeScript)
+    sdk/                  — @neylanxyz/piilo (TypeScript)
   examples/
     confidential-wallet/  — single-user wallet demo
     confidential-payroll/ — multi-recipient private payroll demo
@@ -150,7 +152,7 @@ The wallet demo deploys with zero config:
 vercel --cwd examples/confidential-wallet
 ```
 
-Or connect the repo to Vercel — `vercel.json` at the root points to `examples/confidential-wallet`. Circuit files (~20 MB total) are copied into the build output automatically by the Vite config's `buildStart` hook.
+Or connect the repo to Vercel — `vercel.json` at the root builds the full frontend site (including both examples) via `scripts/build-site.sh`. Circuit files (~20 MB total) are copied into the build output automatically.
 
 To deploy your own contract instance first:
 
@@ -169,7 +171,7 @@ Requires a `worker` identity configured in the Stellar CLI (`stellar keys genera
 ## SDK
 
 ```typescript
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 
 const piilo = new Piilo({
   network: 'testnet',

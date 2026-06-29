@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Piilo } from "@piilo/sdk";
+import { Piilo } from "@neylanxyz/piilo";
 import logoSrc from "./assets/logo.png";
 import AuditorPage from "./AuditorPage.jsx";
 
@@ -165,7 +165,7 @@ export default function App() {
     try {
       const [bal, chain] = await Promise.all([
         sdk.getBalance(),
-        sdk.stellar?.getAccount(address).catch(() => null),
+        sdk.getAccount(address).catch(() => null),
       ]);
       setBalance(bal);
       setOnChain(chain);
@@ -282,7 +282,7 @@ export default function App() {
           <img src={logoSrc} alt="Piilo" className="logo-img" />
           <div>
             <div className="logo-word">PIILO WALLET</div>
-            <div className="logo-tag">confidential wallet · powered by @piilo/sdk</div>
+            <div className="logo-tag">confidential wallet · powered by @neylanxyz/piilo</div>
           </div>
         </div>
 

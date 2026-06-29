@@ -5,8 +5,8 @@ The main entry point of the SDK. Coordinates local state, proof generation, note
 ## Import
 
 ```typescript
-import { Piilo } from '@piilo/sdk'
-import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
+import type { PiiloConfig, WalletAdapter, Network } from '@neylanxyz/piilo'
 ```
 
 ## Constructor
@@ -22,8 +22,17 @@ interface PiiloConfig {
   /** "testnet" or "mainnet" */
   network: Network
 
-  /** Deployed Piilo contract address (starts with "C") */
-  contractId: string
+  /**
+   * Token symbol to use. Defaults to "XLM".
+   * The SDK resolves the Piilo contract address from the on-chain registry.
+   */
+  asset?: string
+
+  /**
+   * Explicit Piilo contract address override (starts with "C").
+   * Bypasses the registry. Use when deploying your own contract instance.
+   */
+  contractId?: string
 
   /** Wallet adapter that provides signing capabilities */
   wallet: WalletAdapter & WalletSigner
@@ -34,6 +43,13 @@ interface PiiloConfig {
    * The relay cannot access funds — it only covers fees.
    */
   relayUrl?: string
+
+  /**
+   * Base URL for circuit files. Defaults to "/circuits" (same-origin).
+   * External consumers can pass a CDN URL, e.g.:
+   * "https://cdn.jsdelivr.net/gh/neylanxyz/piilo@v0.1.0/circuits/build"
+   */
+  circuitsUrl?: string
 }
 ```
 
@@ -79,6 +95,28 @@ type Network = 'testnet' | 'mainnet'
 ```
 
 ## Methods
+
+### getAccount()
+
+```typescript
+async getAccount(address: string): Promise<{
+  balance_commitment: JubJubPoint
+  pending_commitment: JubJubPoint
+  has_pending: boolean
+  nonce: bigint
+} | null>
+```
+
+Fetches the on-chain account state for `address`. Returns `null` if the account has never deposited.
+
+```typescript
+const account = await piilo.getAccount(await wallet.publicKey())
+if (account) {
+  console.log('Has pending:', account.has_pending)
+}
+```
+
+---
 
 ### getBalance()
 

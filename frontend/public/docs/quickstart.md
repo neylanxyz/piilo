@@ -11,7 +11,7 @@ This guide walks you from zero to a working confidential transfer on Stellar tes
 ## 1. Install
 
 ```bash
-npm install @piilo/sdk
+npm install @neylanxyz/piilo
 ```
 
 The package ships with TypeScript types. No separate `@types/` install required.
@@ -34,7 +34,7 @@ public/
 Copy the files from the SDK package:
 
 ```bash
-cp -r node_modules/@piilo/sdk/circuits public/circuits
+cp -r node_modules/@neylanxyz/piilo/circuits public/circuits
 ```
 
 > **Note:** The `.zkey` files are large (~10 MB each). Serve them with appropriate caching headers and consider a CDN for production.
@@ -42,7 +42,7 @@ cp -r node_modules/@piilo/sdk/circuits public/circuits
 ## 3. Configure and instantiate
 
 ```typescript
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 
 // WalletAdapter wraps any Stellar wallet.
 // See the Freighter guide for a ready-made adapter.
@@ -144,7 +144,7 @@ await piilo.importBackup(json)
 ## Full example
 
 ```typescript
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 
 const piilo = new Piilo({ network: 'testnet', contractId: 'C…', wallet })
 

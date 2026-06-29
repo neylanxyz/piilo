@@ -81,7 +81,7 @@
       'page.piiloclass.h1':      'Piilo class',
       'page.piiloclass.intro':   'The main entry point of the SDK. Coordinates local state, proof generation, note encryption, and Stellar transaction submission.',
       'page.types.h1':           'Types',
-      'page.types.intro':        'All public types exported from @piilo/sdk.',
+      'page.types.intro':        'All public types exported from @neylanxyz/piilo.',
       'page.freighter.h1':       'Freighter Integration',
       'page.freighter.intro':    'Freighter is the most widely used browser wallet for Stellar. This guide provides a complete, production-ready WalletAdapter for Freighter.',
       'page.selfhosting.h1':     'Self-hosting Circuit Files',
@@ -162,7 +162,7 @@
       'page.piiloclass.h1':      'Clase Piilo',
       'page.piiloclass.intro':   'El punto de entrada principal del SDK. Coordina el estado local, la generación de pruebas, el cifrado de notas y el envío de transacciones Stellar.',
       'page.types.h1':           'Tipos',
-      'page.types.intro':        'Todos los tipos públicos exportados de @piilo/sdk.',
+      'page.types.intro':        'Todos los tipos públicos exportados de @neylanxyz/piilo.',
       'page.freighter.h1':       'Integración Freighter',
       'page.freighter.intro':    'Freighter es la cartera de navegador más utilizada para Stellar. Esta guía proporciona un WalletAdapter completo y listo para producción.',
       'page.selfhosting.h1':     'Auto-alojar archivos de circuito',
@@ -186,7 +186,7 @@
       </ul>
       <p>Consulta <a href="concepts/privacy-model.html">Modelo de privacidad</a> para el modelo de amenazas completo.</p>
       <h2>El SDK</h2>
-      <p>El paquete <code>@piilo/sdk</code> expone una única clase, <code>Piilo</code>, con cinco métodos públicos:</p>
+      <p>El paquete <code>@neylanxyz/piilo</code> expone una única clase, <code>Piilo</code>, con cinco métodos públicos:</p>
       <table>
         <thead><tr><th>Método</th><th>Qué hace</th></tr></thead>
         <tbody>
@@ -212,7 +212,7 @@
         <li>Extensión <a href="https://freighter.app" target="_blank" rel="noopener">Freighter</a> para el navegador (o un <code>WalletAdapter</code> personalizado)</li>
       </ul>
       <h2>1. Instalar</h2>
-      <pre><code class="language-bash">npm install @piilo/sdk</code></pre>
+      <pre><code class="language-bash">npm install @neylanxyz/piilo</code></pre>
       <p>El paquete incluye tipos TypeScript. No se requiere instalar <code>@types/</code> por separado.</p>
       <h2>2. Servir los archivos de circuito</h2>
       <p>Piilo genera pruebas ZK en el navegador usando archivos de circuito WASM. Deben servirse desde tu servidor web en <code>/circuits/</code>:</p>
@@ -224,9 +224,9 @@
     withdraw_1.zkey
     withdraw_js/
       withdraw.wasm</code></pre>
-      <pre><code class="language-bash">cp -r node_modules/@piilo/sdk/circuits public/circuits</code></pre>
+      <pre><code class="language-bash">cp -r node_modules/@neylanxyz/piilo/circuits public/circuits</code></pre>
       <h2>3. Configurar e instanciar</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 
 const wallet = {
   async publicKey() {
@@ -286,7 +286,7 @@ localStorage.setItem('piilo-backup', backup)
 const json = localStorage.getItem('piilo-backup')
 await piilo.importBackup(json)</code></pre>
       <h2>Ejemplo completo</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 
 const piilo = new Piilo({ network: 'testnet', contractId: 'C…', wallet })
 
@@ -554,8 +554,8 @@ const keypair = nacl.box.keyPair.fromSecretKey(seed)</code></pre>
       </ol>
       <p>No operes desde dos dispositivos simultáneamente — cada dispositivo rastrea su propio factor de cegamiento, y las operaciones concurrentes los harán divergir del estado on-chain.</p>`,
       'body.piilo-class': `<h2>Importar</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
-import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'</code></pre>
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
+import type { PiiloConfig, WalletAdapter, Network } from '@neylanxyz/piilo'</code></pre>
 
       <h2>Constructor</h2>
       <div class="method-sig">new Piilo(config: PiiloConfig)</div>
@@ -1016,7 +1016,7 @@ console.log(\`Restored balance: \${balance / 10_000_000n} XLM\`)</code></pre>
   signTransaction,
   signMessage,
 } from '@stellar/freighter-api'
-import type { WalletAdapter, WalletSigner } from '@piilo/sdk'
+import type { WalletAdapter, WalletSigner } from '@neylanxyz/piilo'
 
 export async function createFreighterAdapter(): Promise&lt;WalletAdapter & WalletSigner&gt; {
   const { isConnected: connected } = await isConnected()
@@ -1054,7 +1054,7 @@ export async function createFreighterAdapter(): Promise&lt;WalletAdapter & Walle
 }</code></pre>
 
       <h2>Uso</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 import { createFreighterAdapter } from './freighterAdapter'
 
 async function initPiilo() {
@@ -1071,7 +1071,7 @@ async function initPiilo() {
 
       <h2>React hook example</h2>
       <pre><code class="language-tsx">import { useState, useCallback } from 'react'
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 import { createFreighterAdapter } from './freighterAdapter'
 
 export function usePiilo(contractId: string) {
@@ -1303,7 +1303,7 @@ const encrypted = await encryptWithPassword(backup, userPassword)
       'page.piiloclass.h1':      'Classe Piilo',
       'page.piiloclass.intro':   'O ponto de entrada principal do SDK. Coordena o estado local, a geração de provas, a criptografia de notas e o envio de transações Stellar.',
       'page.types.h1':           'Tipos',
-      'page.types.intro':        'Todos os tipos públicos exportados de @piilo/sdk.',
+      'page.types.intro':        'Todos os tipos públicos exportados de @neylanxyz/piilo.',
       'page.freighter.h1':       'Integração Freighter',
       'page.freighter.intro':    'Freighter é a carteira de navegador mais usada para Stellar. Este guia fornece um WalletAdapter completo e pronto para produção.',
       'page.selfhosting.h1':     'Auto-hospedar arquivos de circuito',
@@ -1327,7 +1327,7 @@ const encrypted = await encryptWithPassword(backup, userPassword)
       </ul>
       <p>Veja <a href="concepts/privacy-model.html">Modelo de privacidade</a> para o modelo completo de ameaças.</p>
       <h2>O SDK</h2>
-      <p>O pacote <code>@piilo/sdk</code> expõe uma única classe, <code>Piilo</code>, com cinco métodos públicos:</p>
+      <p>O pacote <code>@neylanxyz/piilo</code> expõe uma única classe, <code>Piilo</code>, com cinco métodos públicos:</p>
       <table>
         <thead><tr><th>Método</th><th>O que faz</th></tr></thead>
         <tbody>
@@ -1353,7 +1353,7 @@ const encrypted = await encryptWithPassword(backup, userPassword)
         <li>Extensão <a href="https://freighter.app" target="_blank" rel="noopener">Freighter</a> para o navegador (ou um <code>WalletAdapter</code> personalizado)</li>
       </ul>
       <h2>1. Instalar</h2>
-      <pre><code class="language-bash">npm install @piilo/sdk</code></pre>
+      <pre><code class="language-bash">npm install @neylanxyz/piilo</code></pre>
       <p>O pacote já inclui tipos TypeScript. Não é necessário instalar <code>@types/</code> separadamente.</p>
       <h2>2. Servir os arquivos de circuito</h2>
       <p>A Piilo gera provas ZK no navegador usando arquivos de circuito WASM. Eles devem ser servidos pelo seu servidor web em <code>/circuits/</code>:</p>
@@ -1365,9 +1365,9 @@ const encrypted = await encryptWithPassword(backup, userPassword)
     withdraw_1.zkey
     withdraw_js/
       withdraw.wasm</code></pre>
-      <pre><code class="language-bash">cp -r node_modules/@piilo/sdk/circuits public/circuits</code></pre>
+      <pre><code class="language-bash">cp -r node_modules/@neylanxyz/piilo/circuits public/circuits</code></pre>
       <h2>3. Configurar e instanciar</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 
 const wallet = {
   async publicKey() {
@@ -1427,7 +1427,7 @@ localStorage.setItem('piilo-backup', backup)
 const json = localStorage.getItem('piilo-backup')
 await piilo.importBackup(json)</code></pre>
       <h2>Exemplo completo</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 
 const piilo = new Piilo({ network: 'testnet', contractId: 'C…', wallet })
 
@@ -1695,8 +1695,8 @@ const keypair = nacl.box.keyPair.fromSecretKey(seed)</code></pre>
       </ol>
       <p>Não opere de dois dispositivos simultaneamente — cada dispositivo rastreia seu próprio fator de ocultação, e operações concorrentes farão com que eles divirjam do estado on-chain.</p>`,
       'body.piilo-class': `<h2>Importar</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
-import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'</code></pre>
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
+import type { PiiloConfig, WalletAdapter, Network } from '@neylanxyz/piilo'</code></pre>
 
       <h2>Constructor</h2>
       <div class="method-sig">new Piilo(config: PiiloConfig)</div>
@@ -2157,7 +2157,7 @@ console.log(\`Restored balance: \${balance / 10_000_000n} XLM\`)</code></pre>
   signTransaction,
   signMessage,
 } from '@stellar/freighter-api'
-import type { WalletAdapter, WalletSigner } from '@piilo/sdk'
+import type { WalletAdapter, WalletSigner } from '@neylanxyz/piilo'
 
 export async function createFreighterAdapter(): Promise&lt;WalletAdapter & WalletSigner&gt; {
   const { isConnected: connected } = await isConnected()
@@ -2195,7 +2195,7 @@ export async function createFreighterAdapter(): Promise&lt;WalletAdapter & Walle
 }</code></pre>
 
       <h2>Uso</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 import { createFreighterAdapter } from './freighterAdapter'
 
 async function initPiilo() {
@@ -2212,7 +2212,7 @@ async function initPiilo() {
 
       <h2>React hook example</h2>
       <pre><code class="language-tsx">import { useState, useCallback } from 'react'
-import { Piilo } from '@piilo/sdk'
+import { Piilo } from '@neylanxyz/piilo'
 import { createFreighterAdapter } from './freighterAdapter'
 
 export function usePiilo(contractId: string) {

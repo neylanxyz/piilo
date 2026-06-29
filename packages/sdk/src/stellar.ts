@@ -456,6 +456,42 @@ export class PiiloStellar {
     };
   }
 
+  // ── Registry lookup ────────────────────────────────────────────────────────
+
+  static async registryLookup(
+    network: Network,
+    registryId: string,
+    tokenSac: string
+  ): Promise<string | null> {
+    const server = new rpc.Server(RPC_URLS[network]);
+    const registry = new Contract(registryId);
+    const phrase = network === "mainnet" ? Networks.PUBLIC : Networks.TESTNET;
+
+    const dummyKeypair = Keypair.random();
+    const dummyAccount = await server.getAccount(dummyKeypair.publicKey()).catch(() => ({
+      id: dummyKeypair.publicKey(), sequenceNumber: () => "0",
+      incrementSequenceNumber: () => {}, accountId: () => dummyKeypair.publicKey(),
+      sequence: "0", subentryCount: 0, inflationDest: null, homeDomain: "",
+      thresholds: { lowThreshold: 0, medThreshold: 0, highThreshold: 0 },
+      flags: { authRequired: false, authRevocable: false, authImmutable: false },
+      balances: [], signers: [], data: {},
+    } as never));
+
+    const tx = new TransactionBuilder(dummyAccount as never, {
+      fee: "100", networkPassphrase: phrase,
+    })
+      .addOperation(registry.call("get", nativeToScVal(tokenSac, { type: "address" })))
+      .setTimeout(5)
+      .build();
+
+    const sim = await server.simulateTransaction(tx);
+    if (rpc.Api.isSimulationError(sim) || !sim.result) return null;
+
+    const val = scValToNative(sim.result.retval);
+    if (!val) return null;
+    return String(val);
+  }
+
   async getNotePubkey(address: string): Promise<Uint8Array | null> {
     const dummyKeypair = Keypair.random();
     const dummyAccount = await this.rpc
