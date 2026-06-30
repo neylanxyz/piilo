@@ -11,6 +11,7 @@ export function Nav() {
         <span className="nav-wordmark">Piilo</span>
       </a>
       <ul className="nav-links">
+        <li><a href="#demo">Demo</a></li>
         <li><a href="/docs/introduction.html">{t('nav.docs')}</a></li>
         <li><a href="#examples">{t('nav.examples')}</a></li>
         <li><a href="https://github.com/neylanxyz/piilo" target="_blank" rel="noopener">{t('nav.github')}</a></li>
