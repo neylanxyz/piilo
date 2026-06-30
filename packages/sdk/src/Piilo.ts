@@ -120,6 +120,11 @@ export class Piilo {
     return (await this.getStellar()).getFees();
   }
 
+  /** Returns the resolved on-chain contract ID for this token. */
+  async getContractId(): Promise<string> {
+    return (await this.getStellar()).contractId;
+  }
+
   /** Fetch the on-chain account state (commitments, pending flag). */
   async getAccount(address: string) {
     return (await this.getStellar()).getAccount(address);
@@ -136,7 +141,7 @@ export class Piilo {
    * account. Picks a random blinding factor, computes the commitment, and
    * submits the on-chain deposit transaction.
    */
-  async deposit(amount: bigint): Promise<void> {
+  async deposit(amount: bigint): Promise<string> {
     if (amount <= 0n) throw new Error("amount must be positive");
     const address = await this.myAddress();
     const noteKeypair = await this.getNoteKeypair();
@@ -146,17 +151,18 @@ export class Piilo {
     const fee = amount * BigInt(depositFeeBps) / 10_000n;
     const credited = amount - fee;
 
-    await (await this.getStellar()).deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
+    const txHash = await (await this.getStellar()).deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
 
     const state = loadState(address, this.asset);
     saveState(address, this.asset,applyDeposit(state, credited, r));
+    return txHash;
   }
 
   /**
    * Send `amount` privately to `to`. Generates a Groth16 proof, encrypts the
    * payment note for the recipient, and submits the transfer transaction.
    */
-  async transfer({ to, amount }: { to: string; amount: bigint }): Promise<void> {
+  async transfer({ to, amount }: { to: string; amount: bigint }): Promise<string> {
     const address = await this.myAddress();
     const state = loadState(address, this.asset);
 
@@ -192,7 +198,7 @@ export class Piilo {
       encryptNote(amount, r_A, recipientPubkey, noteKeypair)
     );
 
-    await (await this.getStellar()).transfer(
+    const txHash = await (await this.getStellar()).transfer(
       this.cfg.wallet,
       to,
       C_A,
@@ -204,6 +210,7 @@ export class Piilo {
     );
 
     saveState(address, this.asset,applySend(state, amount, r_new));
+    return txHash;
   }
 
   /**
@@ -211,7 +218,7 @@ export class Piilo {
    * calls settle_pending on-chain, and updates local state.
    * Returns the total received amount, or null if nothing was pending.
    */
-  async settleIfPending(): Promise<{ received: bigint } | null> {
+  async settleIfPending(): Promise<{ received: bigint; txHash: string } | null> {
     const address = await this.myAddress();
     const onChain = await (await this.getStellar()).getAccount(address);
     if (!onChain?.has_pending) return null;
@@ -219,7 +226,7 @@ export class Piilo {
     // Fetch and decrypt incoming transfer notes from on-chain events.
     const notes = await this.fetchPendingNotes(address);
 
-    await (await this.getStellar()).settlePending(this.cfg.wallet);
+    const txHash = await (await this.getStellar()).settlePending(this.cfg.wallet);
 
     const state = loadState(address, this.asset);
     const withNotes = notes.reduce(
@@ -230,14 +237,14 @@ export class Piilo {
     saveState(address, this.asset,settled);
 
     const received = notes.reduce((s, n) => s + n.amount, 0n);
-    return { received };
+    return { received, txHash };
   }
 
   /**
    * Reveal balance and withdraw all XLM. Generates a Groth16 proof of balance
    * knowledge, submits the withdrawal, and resets local state.
    */
-  async withdraw(): Promise<{ payout: bigint }> {
+  async withdraw(): Promise<{ payout: bigint; txHash: string }> {
     const address = await this.myAddress();
     const state = loadState(address, this.asset);
 
@@ -260,10 +267,10 @@ export class Piilo {
       B: state.balance,
     }, this.circuitsBase);
 
-    await (await this.getStellar()).withdraw(this.cfg.wallet, state.balance, proof);
+    const txHash = await (await this.getStellar()).withdraw(this.cfg.wallet, state.balance, proof);
 
     saveState(address, this.asset,{ balance: 0n, r: 0n, pendingNotes: [] });
-    return { payout };
+    return { payout, txHash };
   }
 
   /** Export local state (balance + blinding factor) as a JSON string. */

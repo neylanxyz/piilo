@@ -160,6 +160,8 @@ body {
 .status-sending { color: var(--accent2); animation: pulse 1s infinite; }
 .status-sent    { color: var(--ok); }
 .status-failed  { color: var(--err); cursor: help; }
+.status-tx-link { color: var(--accent2); text-decoration: none; opacity: 0.8; }
+.status-tx-link:hover { opacity: 1; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
@@ -216,6 +218,17 @@ body {
 .log-ok   .log-msg { color: var(--ok); }
 .log-warn .log-msg { color: var(--warn); }
 .log-error .log-msg { color: var(--err); }
+
+.log-link {
+  color: var(--accent2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-decoration: none;
+  flex-shrink: 0;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.log-link:hover { opacity: 1; text-decoration: underline; }
 
 /* ── inputs ── */
 .input {

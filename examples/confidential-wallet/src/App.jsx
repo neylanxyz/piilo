@@ -58,6 +58,14 @@ function shortenAddr(addr) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+function explorerTxUrl(hash) {
+  return `https://stellar.expert/explorer/testnet/tx/${hash}`;
+}
+
+function explorerContractUrl(contractId) {
+  return `https://stellar.expert/explorer/testnet/contract/${contractId}`;
+}
+
 const MAX_SANE_STROOPS = 500_000_000_000_000_000n;
 
 function tokenFmt(stroops, symbol = "XLM") {
@@ -84,6 +92,7 @@ export default function App() {
   const [balance, setBalance]     = useState(null);
   const [onChain, setOnChain]     = useState(null); // { balance_commitment, has_pending }
   const [fees, setFees]           = useState(null); // { depositFeeBps, withdrawFeeBps, transferFlatFee }
+  const [contractId, setContractId] = useState(null);
   const [log, setLog]             = useState([]);
   const [busy, setBusy]           = useState(false);
   const [backupStale, setBackupStale] = useState(false);
@@ -104,9 +113,9 @@ export default function App() {
   }
 
   // ── log ──────────────────────────────────────────────────────────────────────
-  const emit = useCallback((msg, type = "info") => {
+  const emit = useCallback((msg, type = "info", href = null) => {
     const ts = new Date().toLocaleTimeString("en", { hour12: false });
-    setLog((l) => [...l.slice(-49), { ts, msg, type }]);
+    setLog((l) => [...l.slice(-49), { ts, msg, type, href }]);
   }, []);
 
   useEffect(() => {
@@ -139,10 +148,12 @@ export default function App() {
       await Promise.all([
         refresh(sdk, w.address),
         sdk.getFees().then(setFees).catch(() => null),
+        sdk.getContractId().then(setContractId).catch(() => null),
       ]);
     } catch (e) {
       emit(e.message, "error");
       setPiilo(null);
+      setContractId(null);
     }
   }
 
@@ -153,6 +164,7 @@ export default function App() {
     setOnChain(null);
     setFees(null);
     setPiilo(null);
+    setContractId(null);
     setBusy(true);
     emit(`Switching to ${newAsset}…`);
     await initSdk(wallet, newAsset);
@@ -181,7 +193,11 @@ export default function App() {
     emit(`${label}…`);
     try {
       const result = await fn();
-      emit(result ?? `${label} done`, "ok");
+      if (result && typeof result === "object" && result.msg) {
+        emit(result.msg, "ok", result.href ?? null);
+      } else {
+        emit(result ?? `${label} done`, "ok");
+      }
       if (mutatesBalance) setBackupStale(true);
       await refresh(piilo, wallet.address);
     } catch (e) {
@@ -193,32 +209,33 @@ export default function App() {
   const handleDeposit = () =>
     op("Deposit", async () => {
       const stroops = BigInt(Math.round(parseFloat(depositAmt) * 1e7));
-      await piilo.deposit(stroops);
+      const txHash = await piilo.deposit(stroops);
       const fee = fees ? stroops * BigInt(fees.depositFeeBps) / 10_000n : 0n;
       const credited = stroops - fee;
-      return fee > 0n
+      const msg = fee > 0n
         ? `Deposited ${depositAmt} ${asset} — credited ${tokenFmt(credited, asset)} (fee ${tokenFmt(fee, asset)})`
         : `Deposited ${depositAmt} ${asset}`;
+      return { msg, href: explorerTxUrl(txHash) };
     }, { mutatesBalance: true });
 
   const handleTransfer = () =>
     op("Transfer", async () => {
       const stroops = BigInt(Math.round(parseFloat(transferAmt) * 1e7));
-      await piilo.transfer({ to: transferTo, amount: stroops });
-      return `Sent ${transferAmt} ${asset} → ${shortenAddr(transferTo)}`;
+      const txHash = await piilo.transfer({ to: transferTo, amount: stroops });
+      return { msg: `Sent ${transferAmt} ${asset} → ${shortenAddr(transferTo)}`, href: explorerTxUrl(txHash) };
     }, { mutatesBalance: true });
 
   const handleSettle = () =>
     op("Settle", async () => {
       const result = await piilo.settleIfPending();
       if (!result) return "No pending balance";
-      return `Settled +${tokenFmt(result.received, asset)}`;
+      return { msg: `Settled +${tokenFmt(result.received, asset)}`, href: explorerTxUrl(result.txHash) };
     }, { mutatesBalance: true });
 
   const handleWithdraw = () =>
     op("Withdraw", async () => {
-      const { payout } = await piilo.withdraw();
-      return `Withdrawn — you received ${tokenFmt(payout, asset)}`;
+      const { payout, txHash } = await piilo.withdraw();
+      return { msg: `Withdrawn — you received ${tokenFmt(payout, asset)}`, href: explorerTxUrl(txHash) };
     }, { mutatesBalance: true });
 
   const handleExport = () =>
@@ -376,7 +393,19 @@ export default function App() {
                 </div>
                 <div className="reveal-divider">vs</div>
                 <div className="reveal-col">
-                  <div className="reveal-label">ON-CHAIN (everyone sees)</div>
+                  <div className="reveal-label">
+                    ON-CHAIN (everyone sees)
+                    {contractId && (
+                      <a
+                        href={explorerContractUrl(contractId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="chain-link"
+                      >
+                        view on chain ↗
+                      </a>
+                    )}
+                  </div>
                   <div className="reveal-value mono dim">
                     {commitment ?? (
                       onChain === null
@@ -559,6 +588,11 @@ export default function App() {
                   <div key={i} className={`log-line log-${entry.type}`}>
                     <span className="log-ts">{entry.ts}</span>
                     <span className="log-msg">{entry.msg}</span>
+                    {entry.href && (
+                      <a href={entry.href} target="_blank" rel="noreferrer" className="log-link">
+                        view on chain ↗
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>

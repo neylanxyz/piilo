@@ -309,6 +309,8 @@ main {
 }
 
 .reveal-label {
+  display: flex;
+  align-items: center;
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -544,6 +546,27 @@ button:disabled {
 .log-ok    .log-msg { color: var(--bright); }
 .log-error .log-msg { color: var(--danger); }
 .log-warn  .log-msg { color: var(--warn); }
+
+.log-link {
+  color: var(--accent2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-decoration: none;
+  flex-shrink: 0;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.log-link:hover { opacity: 1; text-decoration: underline; }
+
+.chain-link {
+  color: var(--accent2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-decoration: none;
+  margin-left: 8px;
+  opacity: 0.7;
+}
+.chain-link:hover { opacity: 1; text-decoration: underline; }
 
 /* ── notice ─────────────────────────────────────────────────────────────────── */
 .notice {

@@ -119,6 +119,10 @@ export class PiiloStellar {
     this.network = network;
   }
 
+  get contractId(): string {
+    return this.contract.contractId();
+  }
+
   private networkPassphrase(): string {
     return this.network === "mainnet" ? Networks.PUBLIC : Networks.TESTNET;
   }
@@ -127,7 +131,7 @@ export class PiiloStellar {
     wallet: WalletAdapter,
     method: string,
     args: xdr.ScVal[]
-  ): Promise<rpc.Api.GetTransactionResponse> {
+  ): Promise<string> { // returns transaction hash
     const publicKey = await wallet.publicKey();
     const account = await this.rpc.getAccount(publicKey);
 
@@ -161,7 +165,7 @@ export class PiiloStellar {
     for (let i = 0; i < 30; i++) {
       await new Promise((r) => setTimeout(r, 1000));
       const result = await this.rpc.getTransaction(sent.hash);
-      if (result.status !== "NOT_FOUND") return result;
+      if (result.status !== "NOT_FOUND") return sent.hash;
     }
     throw new Error("Transaction not confirmed within 30s");
   }
@@ -171,9 +175,9 @@ export class PiiloStellar {
     amount: bigint,
     r: bigint,
     notePubkey: Uint8Array
-  ): Promise<void> {
+  ): Promise<string> {
     const user = await wallet.publicKey();
-    await this.buildAndSend(wallet, "deposit", [
+    return this.buildAndSend(wallet, "deposit", [
       nativeToScVal(user, { type: "address" }),
       nativeToScVal(amount, { type: "i128" }),
       encodeBlinding(r),
@@ -190,9 +194,9 @@ export class PiiloStellar {
     encryptedNote: Uint8Array,
     r_e: JubJubPoint,
     a_enc: bigint
-  ): Promise<void> {
+  ): Promise<string> {
     const sender = await wallet.publicKey();
-    await this.buildAndSend(wallet, "transfer", [
+    return this.buildAndSend(wallet, "transfer", [
       nativeToScVal(sender, { type: "address" }),
       nativeToScVal(recipientAddress, { type: "address" }),
       encodePoint(c_a),
@@ -204,9 +208,9 @@ export class PiiloStellar {
     ]);
   }
 
-  async settlePending(wallet: WalletAdapter): Promise<void> {
+  async settlePending(wallet: WalletAdapter): Promise<string> {
     const user = await wallet.publicKey();
-    await this.buildAndSend(wallet, "settle_pending", [
+    return this.buildAndSend(wallet, "settle_pending", [
       nativeToScVal(user, { type: "address" }),
     ]);
   }
@@ -215,9 +219,9 @@ export class PiiloStellar {
     wallet: WalletAdapter,
     amount: bigint,
     proof: GrothProof
-  ): Promise<void> {
+  ): Promise<string> {
     const user = await wallet.publicKey();
-    await this.buildAndSend(wallet, "withdraw", [
+    return this.buildAndSend(wallet, "withdraw", [
       nativeToScVal(user, { type: "address" }),
       nativeToScVal(amount, { type: "i128" }),
       encodeProof(proof),

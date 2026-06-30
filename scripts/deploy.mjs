@@ -146,19 +146,21 @@ if (REGISTRY_ID) {
   log(`\nNo registry in deployments.json — skipping on-chain registration.`);
 }
 
-// Also write a per-token .env for the frontend example
-const envPath = path.join(ROOT, "examples/confidential-wallet/.env");
-let envContent = "";
-try { envContent = readFileSync(envPath, "utf8"); } catch {}
+// Write per-token .env for both frontend examples
 const envKey = `VITE_PIILO_${TOKEN_SYMBOL}`;
 const envLine = `${envKey}=${PIILO_ID}`;
-if (envContent.includes(envKey)) {
-  envContent = envContent.replace(new RegExp(`${envKey}=.*`), envLine);
-} else {
-  envContent += `${envLine}\n`;
+for (const exampleDir of ["confidential-wallet", "confidential-payroll"]) {
+  const envPath = path.join(ROOT, `examples/${exampleDir}/.env`);
+  let envContent = "";
+  try { envContent = readFileSync(envPath, "utf8"); } catch {}
+  if (envContent.includes(envKey)) {
+    envContent = envContent.replace(new RegExp(`${envKey}=.*`), envLine);
+  } else {
+    envContent += `${envLine}\n`;
+  }
+  writeFileSync(envPath, envContent);
+  log(`Updated ${envPath}: ${envLine}`);
 }
-writeFileSync(envPath, envContent);
-log(`Updated ${envPath}: ${envLine}`);
 log(`\nDone. To deploy another token: node scripts/deploy.mjs --symbol USDC --token-address <SAC>`);
 
 // ══════════════════════════════════════════════════════════════════════════════

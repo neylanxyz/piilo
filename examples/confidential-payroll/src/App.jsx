@@ -58,6 +58,10 @@ function shortenAddr(addr) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+function explorerTxUrl(hash) {
+  return `https://stellar.expert/explorer/testnet/tx/${hash}`;
+}
+
 const MAX_SANE_STROOPS = 500_000_000_000_000_000n;
 
 function tokenFmt(stroops, symbol = "XLM") {
@@ -112,9 +116,9 @@ export default function App() {
   const [log, setLog]               = useState([]);
   const logRef = useRef(null);
 
-  const emit = useCallback((msg, type = "info") => {
+  const emit = useCallback((msg, type = "info", href = null) => {
     const ts = new Date().toLocaleTimeString("en", { hour12: false });
-    setLog((l) => [...l.slice(-99), { ts, msg, type }]);
+    setLog((l) => [...l.slice(-99), { ts, msg, type, href }]);
   }, []);
 
   useEffect(() => {
@@ -216,9 +220,13 @@ export default function App() {
     emit("Depositing…");
     try {
       const stroops = BigInt(Math.round(parseFloat(depositAmt) * 1e7));
-      await piilo.deposit(stroops);
+      const txHash = await piilo.deposit(stroops);
       const fee = fees ? stroops * BigInt(fees.depositFeeBps) / 10_000n : 0n;
-      emit(`Deposited ${depositAmt} ${asset}${fee > 0n ? ` (fee ${tokenFmt(fee, asset)})` : ""}`, "ok");
+      emit(
+        `Deposited ${depositAmt} ${asset}${fee > 0n ? ` (fee ${tokenFmt(fee, asset)})` : ""}`,
+        "ok",
+        explorerTxUrl(txHash)
+      );
       setDepositAmt("");
       await refreshBalance(piilo);
     } catch (e) {
@@ -244,9 +252,13 @@ export default function App() {
       setRunStatus((s) => ({ ...s, [r.id]: { state: "sending" } }));
       emit(`Sending to ${r.name || shortenAddr(r.address)}…`);
       try {
-        await piilo.transfer({ to: r.address, amount: stroops });
-        setRunStatus((s) => ({ ...s, [r.id]: { state: "sent" } }));
-        emit(`✓ ${r.name || shortenAddr(r.address)} — ${tokenFmt(stroops, asset)}`, "ok");
+        const txHash = await piilo.transfer({ to: r.address, amount: stroops });
+        setRunStatus((s) => ({ ...s, [r.id]: { state: "sent", txHash } }));
+        emit(
+          `✓ ${r.name || shortenAddr(r.address)} — ${tokenFmt(stroops, asset)}`,
+          "ok",
+          explorerTxUrl(txHash)
+        );
       } catch (e) {
         setRunStatus((s) => ({ ...s, [r.id]: { state: "failed", error: e.message } }));
         emit(`✗ ${r.name || shortenAddr(r.address)}: ${e.message}`, "error");
@@ -416,7 +428,21 @@ export default function App() {
                         {!status && <span className="status-dash">—</span>}
                         {status?.state === "pending"  && <span className="status-pending">queued</span>}
                         {status?.state === "sending"  && <span className="status-sending">sending…</span>}
-                        {status?.state === "sent"     && <span className="status-sent">✓ sent</span>}
+                        {status?.state === "sent"     && (
+                          <span className="status-sent">
+                            ✓ sent{" "}
+                            {status.txHash && (
+                              <a
+                                href={explorerTxUrl(status.txHash)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="status-tx-link"
+                              >
+                                ↗
+                              </a>
+                            )}
+                          </span>
+                        )}
                         {status?.state === "failed"   && (
                           <span className="status-failed" title={status.error}>✗ failed</span>
                         )}
@@ -504,6 +530,11 @@ export default function App() {
               <div key={i} className={`log-line log-${entry.type}`}>
                 <span className="log-ts">{entry.ts}</span>
                 <span className="log-msg">{entry.msg}</span>
+                {entry.href && (
+                  <a href={entry.href} target="_blank" rel="noreferrer" className="log-link">
+                    view on chain ↗
+                  </a>
+                )}
               </div>
             ))}
           </div>
