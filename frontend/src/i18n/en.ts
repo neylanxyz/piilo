@@ -68,7 +68,7 @@ const en = {
 
   'roadmap.v03.version': 'v0.3',
   'roadmap.v03.title':   'Mainnet',
-  'roadmap.v03.body':    'Production contract deployment. Alignment with OpenZeppelin confidential token standard interface.',
+  'roadmap.v03.body':    'Production contract deployment. Active alignment with the OpenZeppelin Confidential Token standard — now live on Stellar testnet.',
 
   'roadmap.v10.version': 'v1.0',
   'roadmap.v10.title':   'Ecosystem',
@@ -76,7 +76,20 @@ const en = {
 
   'roadmap.v20.version': 'v2.0',
   'roadmap.v20.title':   'OZ Integration',
-  'roadmap.v20.body':    'Adopt OpenZeppelin confidential token interface as the canonical standard. Piilo becomes the reference implementation on Stellar.',
+  'roadmap.v20.body':    'Piilo becomes the reference SPP-style implementation on Stellar — hiding parties and amounts — complementing OpenZeppelin Confidential Tokens (live on testnet, June 2026), which hide amounts only. Two recognized privacy tiers, one ecosystem.',
+
+  'fees.label': 'fees',
+  'fees.h2': 'Simple.<br>Predictable.',
+  'fees.sub': 'No subscription. No monthly minimums. You pay only when value moves.',
+  'fees.deposit.label': 'Deposit',
+  'fees.deposit.fee': '0.1%',
+  'fees.deposit.desc': 'One-time entry fee when funds enter the private pool.',
+  'fees.transfer.label': 'Transfer',
+  'fees.transfer.fee': '0.1 token',
+  'fees.transfer.desc': 'Flat fee per private transfer in the token being used — 0.1 XLM or 0.1 USDC.',
+  'fees.withdraw.label': 'Withdraw',
+  'fees.withdraw.fee': '0.3%',
+  'fees.withdraw.desc': 'Exit fee when you withdraw from the private pool.',
 
   'footer.tagline':          'Private payments on Stellar',
   'footer.links.docs':       'Docs',

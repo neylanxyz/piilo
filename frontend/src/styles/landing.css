@@ -402,6 +402,64 @@
   max-width: 52ch;
 }
 
+/* ─── FEES ───────────────────────────────────────────── */
+.fees-header { margin-bottom: clamp(2.5rem, 4vw, 4rem); }
+.fees-header .section-h2 { max-width: 18ch; }
+.fees-sub {
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  color: var(--muted);
+  max-width: 52ch;
+}
+
+.fees-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--border-dim);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.fee-card {
+  padding: 1.75rem 2rem;
+  background: oklch(0.10 0 0);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 1.5rem;
+  row-gap: 0.5rem;
+  transition: background 0.2s;
+}
+.fee-card:hover { background: oklch(0.12 0 0); }
+
+.fee-card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  align-self: end;
+}
+.fee-card-amount {
+  font-family: var(--mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  grid-row: 1 / 3;
+  grid-column: 2;
+  align-self: center;
+  white-space: nowrap;
+}
+.fee-card-desc {
+  font-size: 0.9rem;
+  color: var(--muted-hi);
+  line-height: 1.5;
+  margin: 0;
+  grid-column: 1;
+}
+
+
 /* ─── TECH SPEC ──────────────────────────────────────── */
 .spec-header { margin-bottom: clamp(2.5rem, 4vw, 4rem); }
 .spec-table { width: 100%; }

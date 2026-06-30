@@ -70,7 +70,7 @@ const es: Record<I18nKey, string> = {
 
   'roadmap.v03.version': 'v0.3',
   'roadmap.v03.title':   'Mainnet',
-  'roadmap.v03.body':    'Despliegue del contrato en producción. Alineación con el estándar de token confidencial de OpenZeppelin.',
+  'roadmap.v03.body':    'Despliegue del contrato en producción. Alineación activa con el estándar OpenZeppelin Confidential Token — ahora disponible en testnet de Stellar.',
 
   'roadmap.v10.version': 'v1.0',
   'roadmap.v10.title':   'Ecosistema',
@@ -78,7 +78,20 @@ const es: Record<I18nKey, string> = {
 
   'roadmap.v20.version': 'v2.0',
   'roadmap.v20.title':   'Integración OZ',
-  'roadmap.v20.body':    'Adopción de la interfaz de token confidencial de OpenZeppelin como estándar canónico. Piilo se convierte en la implementación de referencia en Stellar.',
+  'roadmap.v20.body':    'Piilo se convierte en la implementación SPP de referencia en Stellar — ocultando partes y montos — complementando los Confidential Tokens de OpenZeppelin (en testnet desde junio 2026), que ocultan solo montos. Dos niveles de privacidad reconocidos, un ecosistema.',
+
+  'fees.label': 'tarifas',
+  'fees.h2': 'Simple.<br>Predecible.',
+  'fees.sub': 'Sin suscripción. Sin mínimos mensuales. Solo pagas cuando el valor se mueve.',
+  'fees.deposit.label': 'Depósito',
+  'fees.deposit.fee': '0.1%',
+  'fees.deposit.desc': 'Tarifa única de entrada cuando los fondos ingresan al pool privado.',
+  'fees.transfer.label': 'Transferencia',
+  'fees.transfer.fee': '0.1 token',
+  'fees.transfer.desc': 'Tarifa fija por transferencia privada en el token utilizado — 0.1 XLM o 0.1 USDC.',
+  'fees.withdraw.label': 'Retiro',
+  'fees.withdraw.fee': '0.3%',
+  'fees.withdraw.desc': 'Tarifa de salida al retirar del pool privado.',
 
   'footer.tagline':          'Pagos privados en Stellar',
   'footer.links.docs':       'Docs',

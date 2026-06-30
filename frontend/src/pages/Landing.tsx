@@ -171,6 +171,29 @@ export function Landing() {
         </div>
       </section>
 
+      {/* ═══ FEES ═══════════════════════════════════════════ */}
+      <section className="section" id="fees">
+        <div className="fees-header reveal">
+          <p className="section-label">{t('fees.label')}</p>
+          <h2 className="section-h2" dangerouslySetInnerHTML={{ __html: t('fees.h2') }} />
+          <p className="fees-sub">{t('fees.sub')}</p>
+        </div>
+
+        <div className="fees-cards">
+          {([
+            { lk: 'fees.deposit.label',  fk: 'fees.deposit.fee',  dk: 'fees.deposit.desc'  },
+            { lk: 'fees.transfer.label', fk: 'fees.transfer.fee', dk: 'fees.transfer.desc' },
+            { lk: 'fees.withdraw.label', fk: 'fees.withdraw.fee', dk: 'fees.withdraw.desc' },
+          ] as const).map(({ lk, fk, dk }, i) => (
+            <div key={lk} className={`fee-card reveal rd${i + 1}`}>
+              <span className="fee-card-label">{t(lk)}</span>
+              <div className="fee-card-amount">{t(fk)}</div>
+              <p className="fee-card-desc">{t(dk)}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ═══ TECH SPEC ══════════════════════════════════════ */}
       <section className="section" id="tech">
         <div className="spec-header reveal">
