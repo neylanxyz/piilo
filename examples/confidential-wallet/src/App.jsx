@@ -4,13 +4,6 @@ import logoSrc from "./assets/logo.png";
 import AuditorPage from "./AuditorPage.jsx";
 
 // ── config ─────────────────────────────────────────────────────────────────────
-// deploy.mjs writes VITE_PIILO_XLM / VITE_PIILO_USDC after each deploy.
-// VITE_CONTRACT_ID is a legacy fallback for pre-multi-token deploys.
-const CONTRACT_IDS_ENV = {
-  XLM:  import.meta.env.VITE_PIILO_XLM  ?? import.meta.env.VITE_CONTRACT_ID ?? undefined,
-  USDC: import.meta.env.VITE_PIILO_USDC ?? undefined,
-};
-
 const SUPPORTED_ASSETS = ["XLM", "USDC"];
 const NETWORK = "testnet";
 
@@ -139,7 +132,6 @@ export default function App() {
     try {
       const sdk = new Piilo({
         network: NETWORK,
-        contractId: CONTRACT_IDS_ENV[selectedAsset] || undefined,
         asset: selectedAsset,
         wallet: w.walletAdapter,
       });
@@ -601,12 +593,6 @@ export default function App() {
           </div>
         )}
 
-        {!piilo && wallet && (
-          <div className="notice">
-            <strong>No {asset} contract configured.</strong>{" "}
-            Run <code>node scripts/deploy.mjs{asset !== "XLM" ? ` --symbol ${asset} --token-address <SAC>` : ""}</code> to deploy.
-          </div>
-        )}
       </main>}
     </div>
   );
