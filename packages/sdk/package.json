@@ -1,6 +1,6 @@
 {
   "name": "@neylanxyz/piilo",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Piilo confidential payments SDK for Stellar",
   "type": "module",
   "main": "./dist/index.js",

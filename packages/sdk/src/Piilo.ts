@@ -151,10 +151,17 @@ export class Piilo {
     const fee = amount * BigInt(depositFeeBps) / 10_000n;
     const credited = amount - fee;
 
+    // Reset local state when depositing into a fresh contract (e.g. after a
+    // redeploy). Without this, stale r from a prior contract causes the
+    // transfer circuit to fail — the accumulated blinding factor no longer
+    // matches the on-chain commitment.
+    const onChain = await (await this.getStellar()).getAccount(address);
+    if (!onChain) saveState(address, this.asset, { balance: 0n, r: 0n, pendingNotes: [] });
+
     const txHash = await (await this.getStellar()).deposit(this.cfg.wallet, amount, r, noteKeypair.publicKey);
 
     const state = loadState(address, this.asset);
-    saveState(address, this.asset,applyDeposit(state, credited, r));
+    saveState(address, this.asset, applyDeposit(state, credited, r));
     return txHash;
   }
 
