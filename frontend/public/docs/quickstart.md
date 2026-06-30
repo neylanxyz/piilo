@@ -60,8 +60,8 @@ const wallet = {
 }
 
 const piilo = new Piilo({
-  network:    'testnet',
-  contractId: 'C…',       // deployed Piilo contract address
+  network: 'testnet',
+  asset:   'XLM',    // resolves the Piilo contract from the on-chain registry
   wallet,
 })
 ```
@@ -146,7 +146,7 @@ await piilo.importBackup(json)
 ```typescript
 import { Piilo } from '@neylanxyz/piilo'
 
-const piilo = new Piilo({ network: 'testnet', contractId: 'C…', wallet })
+const piilo = new Piilo({ network: 'testnet', asset: 'XLM', wallet })
 
 // Deposit 10 XLM
 await piilo.deposit(100_000_000n)

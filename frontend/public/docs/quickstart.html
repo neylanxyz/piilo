@@ -73,7 +73,7 @@
       </ul>
 
       <h2>1. Install</h2>
-      <pre><code class="language-bash">npm install @piilo/sdk</code></pre>
+      <pre><code class="language-bash">npm install @neylanxyz/piilo</code></pre>
       <p>The package ships with TypeScript types. No separate <code>@types/</code> install required.</p>
 
       <h2>2. Serve the circuit files</h2>
@@ -86,11 +86,11 @@
     withdraw_1.zkey
     withdraw_js/
       withdraw.wasm</code></pre>
-      <pre><code class="language-bash">cp -r node_modules/@piilo/sdk/circuits public/circuits</code></pre>
+      <pre><code class="language-bash">cp -r node_modules/@neylanxyz/piilo/circuits public/circuits</code></pre>
       <blockquote><p><strong>Note:</strong> The <code>.zkey</code> files are large (~10 MB each). Serve them with appropriate caching headers and consider a CDN for production. See <a href="guides/self-hosting.html"data-i18n="nav.selfhosting">Self-hosting Circuits</a>.</p></blockquote>
 
       <h2>3. Configure and instantiate</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 
 const wallet = {
   async publicKey() {
@@ -106,8 +106,8 @@ const wallet = {
 }
 
 const piilo = new Piilo({
-  network:    'testnet',
-  contractId: 'C…',       // deployed Piilo contract address
+  network: 'testnet',
+  asset:   'XLM',    // resolves the Piilo contract from the on-chain registry
   wallet,
 })</code></pre>
 
@@ -156,9 +156,9 @@ const json = localStorage.getItem('piilo-backup')
 await piilo.importBackup(json)</code></pre>
 
       <h2>Full example</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
 
-const piilo = new Piilo({ network: 'testnet', contractId: 'C…', wallet })
+const piilo = new Piilo({ network: 'testnet', asset: 'XLM', wallet })
 
 // Deposit 10 XLM
 await piilo.deposit(100_000_000n)

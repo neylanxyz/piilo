@@ -65,8 +65,8 @@
 
       <div data-i18n="body.piilo-class">
 <h2>Import</h2>
-      <pre><code class="language-typescript">import { Piilo } from '@piilo/sdk'
-import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'</code></pre>
+      <pre><code class="language-typescript">import { Piilo } from '@neylanxyz/piilo'
+import type { PiiloConfig, WalletAdapter, Network } from '@neylanxyz/piilo'</code></pre>
 
       <h2>Constructor</h2>
       <div class="method-sig">new Piilo(config: PiiloConfig)</div>
@@ -82,11 +82,6 @@ import type { PiiloConfig, WalletAdapter, Network } from '@piilo/sdk'</code></pr
   /** Wallet adapter that provides signing capabilities */
   wallet: WalletAdapter & WalletSigner
 
-  /**
-   * Optional relay URL for fee sponsorship.
-   * The relay cannot access funds — it only covers fees.
-   */
-  relayUrl?: string
 }</code></pre>
 
       <h3>WalletAdapter</h3>

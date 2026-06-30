@@ -10,7 +10,6 @@ interface PiiloConfig {
   asset?:        string           // token symbol, defaults to "XLM"
   contractId?:   string           // explicit override, bypasses registry
   wallet:        WalletAdapter & WalletSigner
-  relayUrl?:     string
   circuitsUrl?:  string           // base URL for circuit files, defaults to "/circuits"
 }
 ```

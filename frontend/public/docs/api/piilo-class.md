@@ -38,16 +38,9 @@ interface PiiloConfig {
   wallet: WalletAdapter & WalletSigner
 
   /**
-   * Optional relay URL for fee sponsorship.
-   * If provided, the relay sponsors transaction fees.
-   * The relay cannot access funds — it only covers fees.
-   */
-  relayUrl?: string
-
-  /**
    * Base URL for circuit files. Defaults to "/circuits" (same-origin).
    * External consumers can pass a CDN URL, e.g.:
-   * "https://cdn.jsdelivr.net/gh/neylanxyz/piilo@v0.1.0/circuits/build"
+   * "https://cdn.jsdelivr.net/gh/neylanxyz/piilo@v0.1.1/circuits/build"
    */
   circuitsUrl?: string
 }
