@@ -21,10 +21,10 @@ const en = {
   'examples.wallet.cta':   'Launch wallet →',
 
   'examples.payroll.title': 'Confidential Payroll',
-  'examples.payroll.desc':  'Multi-recipient payroll run: add employees, set amounts, and send all transfers privately in one click.',
+  'examples.payroll.desc':  'Multi-recipient payroll run: add employees, set amounts, and send all transfers confidentially — approve each in Freighter.',
   'examples.payroll.f1':    'Add recipients with name and address',
   'examples.payroll.f2':    'Set per-recipient amounts in XLM or USDC',
-  'examples.payroll.f3':    'Run payroll — transfers execute sequentially',
+  'examples.payroll.f3':    'Transfers execute sequentially, one Freighter approval each',
   'examples.payroll.f4':    'Live per-row status during the run',
   'examples.payroll.cta':   'Launch payroll →',
 

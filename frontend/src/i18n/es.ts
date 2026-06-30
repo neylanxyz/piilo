@@ -23,10 +23,10 @@ const es: Record<I18nKey, string> = {
   'examples.wallet.cta':   'Abrir cartera →',
 
   'examples.payroll.title': 'Nómina Confidencial',
-  'examples.payroll.desc':  'Ejecución de nómina para múltiples destinatarios: agrega empleados, establece montos y envía todas las transferencias de forma privada con un clic.',
+  'examples.payroll.desc':  'Ejecución de nómina para múltiples destinatarios: agrega empleados, establece montos y envía todas las transferencias de forma confidencial — aprueba cada una en Freighter.',
   'examples.payroll.f1':    'Agregar destinatarios con nombre y dirección',
   'examples.payroll.f2':    'Establecer montos por destinatario en XLM o USDC',
-  'examples.payroll.f3':    'Ejecutar nómina — transferencias secuenciales',
+  'examples.payroll.f3':    'Transferencias secuenciales — una aprobación en Freighter por cada una',
   'examples.payroll.f4':    'Estado en vivo por fila durante la ejecución',
   'examples.payroll.cta':   'Abrir nómina →',
 

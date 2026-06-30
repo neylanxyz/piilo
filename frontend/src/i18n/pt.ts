@@ -23,10 +23,10 @@ const pt: Record<I18nKey, string> = {
   'examples.wallet.cta':   'Abrir carteira →',
 
   'examples.payroll.title': 'Folha de Pagamento Confidencial',
-  'examples.payroll.desc':  'Execução de folha de pagamento para múltiplos destinatários: adicione funcionários, defina valores e envie todas as transferências com privacidade em um clique.',
+  'examples.payroll.desc':  'Execução de folha de pagamento para múltiplos destinatários: adicione funcionários, defina valores e envie todas as transferências de forma confidencial — aprove cada uma no Freighter.',
   'examples.payroll.f1':    'Adicionar destinatários com nome e endereço',
   'examples.payroll.f2':    'Definir valores por destinatário em XLM ou USDC',
-  'examples.payroll.f3':    'Executar folha — transferências executadas sequencialmente',
+  'examples.payroll.f3':    'Transferências sequenciais — uma aprovação no Freighter por cada',
   'examples.payroll.f4':    'Status ao vivo por linha durante a execução',
   'examples.payroll.cta':   'Abrir folha de pagamento →',
 

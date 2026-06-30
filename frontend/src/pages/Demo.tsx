@@ -197,11 +197,12 @@ export function Demo() {
             </div>
             <h3 className="demo-example-title">Confidential Payroll</h3>
             <p className="demo-example-desc">
-              Pay multiple recipients in a single batch. Each recipient sees
-              only their own amount — the total payroll is never visible on-chain.
+              Pay multiple recipients confidentially. Each recipient sees only
+              their own amount — the total payroll is never visible on-chain.
+              Approve each transfer in Freighter.
             </p>
             <div className="demo-example-stack">
-              <span>multi-recipient</span><span>batch transfer</span><span>USDC</span>
+              <span>multi-recipient</span><span>confidential</span><span>USDC</span>
             </div>
           </a>
         </div>
