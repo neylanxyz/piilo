@@ -26,7 +26,7 @@ const TERM_STEPS = [
   { delay: 400,  text: '$ npm install @neylanxyz/piilo', cls: 'term-cmd' },
   { delay: 1200, text: '⠸ resolving packages…',          cls: 'term-muted' },
   { delay: 2400, text: 'added 3 packages in 1.2s',       cls: 'term-muted' },
-  { delay: 3000, text: '✓ @neylanxyz/piilo@0.1.2',       cls: 'term-ok' },
+  { delay: 3000, text: '✓ @neylanxyz/piilo@0.1.3',       cls: 'term-ok' },
 ]
 
 function useIntersection(ref: React.RefObject<Element>) {
