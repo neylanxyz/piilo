@@ -16,30 +16,9 @@ npm install @neylanxyz/piilo
 
 The package ships with TypeScript types. No separate `@types/` install required.
 
-## 2. Serve the circuit files
+Circuit files (WASM provers and zkeys) are loaded from jsDelivr CDN by default — no setup required.
 
-Piilo generates ZK proofs in the browser using WASM circuit files. These must be served from your web server under `/circuits/`:
-
-```
-public/
-  circuits/
-    transfer_1.zkey
-    transfer_js/
-      transfer.wasm
-    withdraw_1.zkey
-    withdraw_js/
-      withdraw.wasm
-```
-
-Copy the files from the SDK package:
-
-```bash
-cp -r node_modules/@neylanxyz/piilo/circuits public/circuits
-```
-
-> **Note:** The `.zkey` files are large (~10 MB each). Serve them with appropriate caching headers and consider a CDN for production.
-
-## 3. Configure and instantiate
+## 2. Configure and instantiate
 
 ```typescript
 import { Piilo } from '@neylanxyz/piilo'
@@ -66,7 +45,7 @@ const piilo = new Piilo({
 })
 ```
 
-## 4. Deposit
+## 3. Deposit
 
 The first operation is always a deposit. The amount is in **stroops** (1 XLM = 10,000,000 stroops):
 
@@ -80,7 +59,7 @@ console.log('Balance:', await piilo.getBalance())
 
 The deposit transaction is public. After it settles, your balance is tracked locally as a Pedersen commitment; no further operations reveal the amount.
 
-## 5. Transfer privately
+## 4. Transfer privately
 
 ```typescript
 // Send 2 XLM to another address
@@ -97,7 +76,7 @@ This will:
 
 The recipient's on-chain commitment is updated homomorphically — the contract adds the commitment point without learning the amount.
 
-## 6. Settle incoming transfers
+## 5. Settle incoming transfers
 
 Recipients must call `settleIfPending` to merge received notes into their balance:
 
@@ -111,7 +90,7 @@ if (result) {
 
 This decrypts all pending notes and calls `settle_pending` on-chain, which merges the accumulated commitment into the recipient's balance commitment.
 
-## 7. Withdraw
+## 6. Withdraw
 
 To exit the protocol and receive XLM back to your Stellar account:
 
@@ -121,7 +100,7 @@ await piilo.withdraw()
 
 This generates a Groth16 proof of balance knowledge, submits it on-chain, and the contract releases the XLM. Your local state is reset to zero.
 
-## 8. Back up your state
+## 7. Back up your state
 
 Your balance and blinding factor live only in `localStorage`. Back them up after every significant operation:
 
@@ -161,6 +140,21 @@ console.log(balance) // 70000000n
 // Withdraw everything
 await piilo.withdraw()
 ```
+
+## Self-hosting circuit files
+
+By default, circuit files are loaded from jsDelivr CDN. For production deployments where you want full control, pass a `circuitsUrl` pointing to your own server:
+
+```typescript
+const piilo = new Piilo({
+  network:     'testnet',
+  asset:       'XLM',
+  wallet,
+  circuitsUrl: 'https://your-cdn.example.com/circuits',
+})
+```
+
+Download `transfer_1.zkey`, `transfer_js/transfer.wasm`, `withdraw_1.zkey`, and `withdraw_js/withdraw.wasm` from the [GitHub releases page](https://github.com/neylanxyz/piilo/releases) and serve them at the path above. The SDK verifies their SHA-256 hashes before use, so swapped files are rejected.
 
 ## Next steps
 

@@ -48,11 +48,9 @@ type NetworkDeployment = {
 };
 const DEPLOYMENTS = deployments as Record<Network, NetworkDeployment>;
 
-// Default circuit base URL: same-origin /circuits/ (matches Piilo's own Vercel
-// hosting and any app that copies circuits to public/circuits/). External npm
-// consumers who don't self-host can pass the jsDelivr CDN URL instead:
-//   https://cdn.jsdelivr.net/gh/neylanxyz/piilo@v0.1.0/circuits/build
-const DEFAULT_CIRCUITS_URL = "/circuits";
+// Default to jsDelivr CDN so the SDK works out of the box without any
+// circuit file setup. Override circuitsUrl for self-hosting.
+const DEFAULT_CIRCUITS_URL = "https://cdn.jsdelivr.net/gh/neylanxyz/piilo@v0.1.1/circuits/build";
 
 export interface PiiloConfig {
   network: Network;

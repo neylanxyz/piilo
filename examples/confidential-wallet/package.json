@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@neylanxyz/piilo": "^0.1.1",
+    "@neylanxyz/piilo": "^0.1.2",
     "@stellar/freighter-api": "^2.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
