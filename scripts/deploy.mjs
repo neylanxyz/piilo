@@ -112,13 +112,39 @@ const constructorArgs = [
 await deployWithConstructor(piiloHash, salt, constructorArgs);
 log(`Piilo deployed: ${PIILO_ID}`);
 
-// ── 5. Update deployments.json ────────────────────────────────────────────────
+// ── 5. Update deployments.json (registry + sacs format) ──────────────────────
 const deploymentsPath = path.join(ROOT, "packages/sdk/src/deployments.json");
 const deployments = JSON.parse(readFileSync(deploymentsPath, "utf8"));
 if (!deployments.testnet) deployments.testnet = {};
-deployments.testnet[TOKEN_SYMBOL] = PIILO_ID;
+if (!deployments.testnet.sacs) deployments.testnet.sacs = {};
+deployments.testnet.sacs[TOKEN_SYMBOL] = NATIVE_TOKEN;
 writeFileSync(deploymentsPath, JSON.stringify(deployments, null, 2) + "\n");
-log(`\nUpdated ${deploymentsPath}: testnet.${TOKEN_SYMBOL} = ${PIILO_ID}`);
+log(`\nUpdated ${deploymentsPath}: testnet.sacs.${TOKEN_SYMBOL} = ${NATIVE_TOKEN}`);
+
+// ── 6. Register in on-chain registry ─────────────────────────────────────────
+const REGISTRY_ID = deployments.testnet.registry;
+if (REGISTRY_ID) {
+  log(`\n── Registering in on-chain registry ${REGISTRY_ID} ──`);
+  const { Contract, nativeToScVal: n2v } = await import(SDK_PATH);
+  const registry = new Contract(REGISTRY_ID);
+  const regAccount = await server.getAccount(keypair.publicKey());
+  const regTx = new TransactionBuilder(regAccount, { fee: "1000000", networkPassphrase: NET_PHRASE })
+    .addOperation(registry.call(
+      "set",
+      n2v(NATIVE_TOKEN, { type: "address" }),
+      n2v(PIILO_ID,     { type: "address" }),
+    ))
+    .setTimeout(30)
+    .build();
+  const regSim = await server.simulateTransaction(regTx);
+  if (rpc.Api.isSimulationError(regSim)) throw new Error(`Registry sim: ${regSim.error}`);
+  const regPrepared = rpc.assembleTransaction(regTx, regSim).build();
+  regPrepared.sign(keypair);
+  await submitAndWait(regPrepared);
+  log(`Registered: ${TOKEN_SYMBOL} (${NATIVE_TOKEN}) → ${PIILO_ID}`);
+} else {
+  log(`\nNo registry in deployments.json — skipping on-chain registration.`);
+}
 
 // Also write a per-token .env for the frontend example
 const envPath = path.join(ROOT, "examples/confidential-wallet/.env");
